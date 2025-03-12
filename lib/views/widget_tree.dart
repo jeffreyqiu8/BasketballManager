@@ -1,0 +1,74 @@
+import 'package:flutter/material.dart';
+import 'package:test1/data/notifiers.dart';
+import 'package:test1/gameData/game_class.dart';
+import 'package:test1/views/pages/home_page.dart';
+import 'package:test1/views/pages/match_history_page.dart';
+import 'package:test1/views/pages/profile_page.dart';
+import 'package:test1/views/pages/team_view_page.dart';
+import 'package:test1/views/widgets/navbar_widget.dart';
+
+
+
+
+class WidgetTree extends StatelessWidget {
+  final Game game;  // This is the object the widget will accept
+  
+  // Constructor that takes a Manager object as an argument
+  const WidgetTree({Key? key, required this.game}) : super(key: key);
+
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        
+      title: Text('Basketball Manager'),
+      centerTitle: true,
+    ),
+      drawer: Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.deepPurple,
+            ),
+            child: Text(
+              'Manager Dashboard',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+              ),
+            ),
+          ),
+          ListTile(
+            title: Text('Match History'),
+            onTap: () {
+              // Navigate to MatchHistoryPage
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MatchHistoryPage(conference: game.currentConference),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+        body : ValueListenableBuilder(
+          valueListenable: selectedPageNotifier,
+          builder: (context, selectedPage, child) {
+            List<Widget> pages = [
+              HomePage(game: game),
+              TeamViewPage(team: game.currentConference.teams[game.currentManager.team]),
+              ProfilePage(),
+              
+            ];
+            return  pages.elementAt(selectedPage);
+          },
+        ),
+        bottomNavigationBar: NavBarWidget(),
+      );
+  }
+}

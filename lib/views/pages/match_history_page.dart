@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:test1/gameData/conference_class.dart'; // Assuming Conference is imported
+import 'package:BasketballManager/gameData/conference_class.dart'; // Assuming Conference is imported
 
 class MatchHistoryPage extends StatelessWidget {
   final Conference conference;

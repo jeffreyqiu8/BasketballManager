@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:test1/data/notifiers.dart';
-import 'package:test1/gameData/game_class.dart';
-import 'package:test1/views/pages/home_page.dart';
-import 'package:test1/views/pages/match_history_page.dart';
-import 'package:test1/views/pages/profile_page.dart';
-import 'package:test1/views/pages/team_view_page.dart';
-import 'package:test1/views/widgets/navbar_widget.dart';
+import 'package:BasketballManager/data/notifiers.dart';
+import 'package:BasketballManager/gameData/game_class.dart';
+import 'package:BasketballManager/views/pages/home_page.dart';
+import 'package:BasketballManager/views/pages/match_history_page.dart';
+import 'package:BasketballManager/views/pages/profile_page.dart';
+import 'package:BasketballManager/views/pages/team_view_page.dart';
+import 'package:BasketballManager/views/widgets/navbar_widget.dart';
 
 
 
@@ -13,7 +13,6 @@ import 'package:test1/views/widgets/navbar_widget.dart';
 class WidgetTree extends StatelessWidget {
   final Game game;  // This is the object the widget will accept
   
-  // Constructor that takes a Manager object as an argument
   const WidgetTree({Key? key, required this.game}) : super(key: key);
 
   
@@ -62,8 +61,7 @@ class WidgetTree extends StatelessWidget {
             List<Widget> pages = [
               HomePage(game: game),
               TeamViewPage(team: game.currentConference.teams[game.currentManager.team]),
-              ProfilePage(),
-              
+              ProfilePage(game: game),
             ];
             return  pages.elementAt(selectedPage);
           },

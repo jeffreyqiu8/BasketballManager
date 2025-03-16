@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:test1/data/notifiers.dart';
+import 'package:BasketballManager/data/notifiers.dart';
 
 class NavBarWidget extends StatelessWidget {
   const NavBarWidget({super.key});

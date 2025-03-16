@@ -1,5 +1,5 @@
-import 'package:test1/gameData/coach_class.dart';
-import 'package:test1/gameData/conference_class.dart';
+import 'package:BasketballManager/gameData/coach_class.dart';
+import 'package:BasketballManager/gameData/conference_class.dart';
 
 class Game {
   Manager currentManager;

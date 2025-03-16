@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:test1/gameData/player_class.dart';
+import 'package:BasketballManager/gameData/player_class.dart';
 
 class PlayerPage extends StatelessWidget {
   final Player player;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:test1/views/pages/loading_page.dart';
-import 'package:test1/views/pages/manager_creation_page.dart';
+import 'package:BasketballManager/views/pages/loading_page.dart';
+import 'package:BasketballManager/views/pages/manager_creation_page.dart';
 
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});

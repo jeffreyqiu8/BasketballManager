@@ -1,4 +1,4 @@
-import 'package:test1/gameData/player_class.dart';
+import 'package:BasketballManager/gameData/player_class.dart';
 
 class Team {
   // General attributes
@@ -54,31 +54,31 @@ class Team {
     losses = 0;
   }
 
-  // Convert the team object to a map for Firestore
+  // Convert the team object to a map for Firestore (store numbers as strings)
   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'reputation': reputation,
-      'playerCount': playerCount,
-      'teamSize': teamSize,
-      'wins': wins,
-      'losses': losses,
+      'reputation': reputation.toString(),  // Convert int to String
+      'playerCount': playerCount.toString(),
+      'teamSize': teamSize.toString(),
+      'wins': wins.toString(),
+      'losses': losses.toString(),
       'players': players.map((player) => player.toMap()).toList(),
     };
   }
 
-  // Factory constructor to create a Team instance from a map (for Firestore)
+  // Factory constructor to create a Team instance from a map (convert strings back to int)
   factory Team.fromMap(Map<String, dynamic> map) {
     return Team(
-      name: map['name'],
-      reputation: map['reputation'],
-      playerCount: map['playerCount'],
-      teamSize: map['teamSize'],
+      name: map['name'] ?? 'Unknown Team',
+      reputation: int.tryParse(map['reputation'].toString()) ?? 0,
+      playerCount: int.tryParse(map['playerCount'].toString()) ?? 0,
+      teamSize: int.tryParse(map['teamSize'].toString()) ?? 5,
+      wins: int.tryParse(map['wins'].toString()) ?? 0,
+      losses: int.tryParse(map['losses'].toString()) ?? 0,
       players: List<Player>.from(
-        map['players'].map((playerMap) => Player.fromMap(playerMap)),
+        (map['players'] ?? []).map((playerMap) => Player.fromMap(playerMap)),
       ),
-      wins: map['wins'] ?? 0,  // Ensure wins is initialized
-      losses: map['losses'] ?? 0,  // Ensure losses is initialized
     );
   }
 }

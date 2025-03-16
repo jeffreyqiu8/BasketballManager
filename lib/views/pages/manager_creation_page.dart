@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:test1/gameData/coach_class.dart';
-import 'package:test1/gameData/conference_class.dart';
-import 'package:test1/gameData/game_class.dart';
-import 'package:test1/views/widget_tree.dart';
+import 'package:BasketballManager/gameData/coach_class.dart';
+import 'package:BasketballManager/gameData/conference_class.dart';
+import 'package:BasketballManager/gameData/game_class.dart';
+import 'package:BasketballManager/views/widget_tree.dart';
 
 class ManagerProfilePage extends StatefulWidget {
   const ManagerProfilePage({super.key});

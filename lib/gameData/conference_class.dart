@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:test1/gameData/player_class.dart';
-import 'package:test1/gameData/team_class.dart';
+import 'package:BasketballManager/gameData/player_class.dart';
+import 'package:BasketballManager/gameData/team_class.dart';
 
 class Conference {
   String name;
@@ -164,8 +164,6 @@ class Conference {
               homeScore += 2;
               boxScore[playerIndex][0] += 2; // Points
 
-              print(playerIndex);
-              print(boxScore[0][0]);
 
               boxScore[playerIndex][3] += 1; // Shots Made
               teamPossession = !teamPossession; // Switch possession
@@ -177,8 +175,6 @@ class Conference {
               homeScore += 2;
               boxScore[playerIndex][0] += 2; // Points
 
-              print(playerIndex);
-              print(boxScore[0][0]);
 
               boxScore[playerIndex][3] += 1; // Shots Made
               teamPossession = !teamPossession; // Switch possession
@@ -189,8 +185,6 @@ class Conference {
             if (shotQuality >= (100 - (25 + player.shooting))) {
               homeScore += 3;
               boxScore[playerIndex][0] += 3; // Points
-              print(playerIndex);
-              print(boxScore[0][0]);
               boxScore[playerIndex][3] += 1; // Shots Made
               boxScore[playerIndex][5] += 1; // 3pt shots made
               teamPossession = !teamPossession; // Switch possession
@@ -227,8 +221,6 @@ class Conference {
             if (shotQuality >= (100 - (30 + player.insideShooting * 2))) {
               awayScore += 2;
               boxScore[homeTeam.teamSize + playerIndex][0] += 2; // Points
-              print(playerIndex);
-              print(boxScore[0][0]);
               boxScore[homeTeam.teamSize + playerIndex][3] += 1; // Shots Made
               teamPossession = !teamPossession; // Switch possession
             }
@@ -238,8 +230,6 @@ class Conference {
             if (shotQuality >= (100 - (25 + player.shooting * 2))) {
               awayScore += 2;
               boxScore[homeTeam.teamSize + playerIndex][0] += 2; // Points
-              print(playerIndex);
-              print(boxScore[0][0]);
               boxScore[homeTeam.teamSize + playerIndex][3] += 1; // Shots Made
               teamPossession = !teamPossession; // Switch possession
             }
@@ -249,8 +239,6 @@ class Conference {
             if (shotQuality >= (100 - (25 + player.shooting))) {
               awayScore += 3;
               boxScore[homeTeam.teamSize + playerIndex][0] += 3; // Points
-              print(playerIndex);
-              print(boxScore[0][0]);
               boxScore[homeTeam.teamSize + playerIndex][3] += 1; // Shots Made
               boxScore[homeTeam.teamSize + playerIndex][5] += 1; // 3pt shots made
               teamPossession = !teamPossession; // Switch possession
@@ -314,8 +302,15 @@ class Conference {
     return {
       'name': name,
       'teams': teams.map((team) => team.toMap()).toList(),
-      'schedule': schedule,
-      'matchday': matchday,
+      'matchday': matchday.toString(),
+      'schedule': schedule.map((game) => {
+          'home': game['home'],
+          'away': game['away'],
+          'homeScore': game['homeScore'].toString(),
+          'awayScore': game['awayScore'].toString(),
+          'matchday': game['matchday'].toString(),
+      }).toList(),
+
     };
   }
 
@@ -333,13 +328,17 @@ class Conference {
     );
 
     // Recreate the schedule from the map
-    List<Map<String, dynamic>> schedule = List<Map<String, dynamic>>.from(map['schedule'] ?? []);
-    conference.schedule = schedule;
+    conference.matchday = int.tryParse(map['matchday'].toString()) ?? 1;
+    conference.schedule = List<Map<String, dynamic>>.from(
+      map['schedule']?.map((game) => {
+        'home': game['home'],
+        'away': game['away'],
+        'homeScore': int.tryParse(game['homeScore'].toString()) ?? 0,
+        'awayScore': int.tryParse(game['awayScore'].toString()) ?? 0,
+        'matchday': int.tryParse(game['matchday'].toString()) ?? 1,
+      }) ?? []
+    );
 
-    // Recreate the matchday if it exists in the map
-    if (map.containsKey('matchday')) {
-      conference.matchday = map['matchday'];
-    }
 
     // Call generateSchedule() to ensure the schedule is populated in case Firebase didn't provide it
     if (conference.schedule.isEmpty) {

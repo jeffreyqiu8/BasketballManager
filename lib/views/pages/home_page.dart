@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:test1/gameData/game_class.dart';
-import 'package:test1/gameData/team_class.dart';
-import 'package:test1/views/pages/team_profile_page.dart';
+import 'package:BasketballManager/gameData/game_class.dart';
+import 'package:BasketballManager/gameData/team_class.dart';
+import 'package:BasketballManager/views/pages/team_profile_page.dart';
 
 class HomePage extends StatefulWidget {
   final Game game;  // This is the object the widget will accept

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:test1/gameData/game_class.dart';
-import 'package:test1/views/pages/welcome_page.dart';
-import 'package:test1/views/widget_tree.dart';
+import 'package:BasketballManager/gameData/game_class.dart';
+import 'package:BasketballManager/views/pages/welcome_page.dart';
+import 'package:BasketballManager/views/widget_tree.dart';
 
 class LoadingManagerProfilesPage extends StatefulWidget {
   const LoadingManagerProfilesPage({super.key});

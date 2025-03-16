@@ -1,16 +1,28 @@
+import 'package:BasketballManager/gameData/game_class.dart';
+import 'package:BasketballManager/gameData/game_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:test1/data/notifiers.dart';
-import 'package:test1/views/pages/welcome_page.dart';
+import 'package:BasketballManager/data/notifiers.dart';
+import 'package:BasketballManager/views/pages/welcome_page.dart';
 
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
-
+  final Game game;  // This is the object the widget will accept
+  
+  const ProfilePage({Key? key, required this.game}) : super(key: key);
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
+
+
 class _ProfilePageState extends State<ProfilePage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GameService _gameService = GameService();
+
+  Future<void> saveGameProgress(Game currentGame, String userId) async {
+    await _gameService.saveGame(currentGame, userId);
+  }
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -20,16 +32,23 @@ class _ProfilePageState extends State<ProfilePage> {
           
           ListTile(
             title: Text('Logout'),
-            onTap: () {
-              selectedPageNotifier.value = 0;
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return WelcomePage();
-                  }
-                )
-              );
+            onTap: () async{
+              User? user = _auth.currentUser;
+
+                if (user != null) {
+                  String userId = user.uid;
+
+                  // Wait for save operation to complete before navigating
+                  await saveGameProgress(widget.game, userId);
+                }
+
+                selectedPageNotifier.value = 0;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WelcomePage(),
+                  ),
+                );
             }
           )
         ],

@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:test1/views/pages/signup_page';
-import 'package:test1/views/pages/welcome_page.dart';
+import 'package:BasketballManager/views/pages/signup_page';
+import 'package:BasketballManager/views/pages/welcome_page.dart';
 
 class LoginPage extends StatefulWidget {
   @override

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:test1/data/notifiers.dart';
-import 'package:test1/views/pages/login_page.dart';
+import 'package:BasketballManager/data/notifiers.dart';
+import 'package:BasketballManager/views/pages/login_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 

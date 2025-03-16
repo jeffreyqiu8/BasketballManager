@@ -88,44 +88,52 @@ class Player {
   }
 
   // Method to return the player's current attributes as a map (useful for saving to a database, like Firestore)
-  Map<String, dynamic> toMap() {
+   Map<String, dynamic> toMap() {
     return {
       'name': name,
-      'age': age,
+      'age': age.toString(),
       'team': team,
-      'experienceYears': experienceYears,
+      'experienceYears': experienceYears.toString(),
       'nationality': nationality,
       'currentStatus': currentStatus,
-      'height': height,
-      'shooting': shooting,
-      'rebounding': rebounding,
-      'passing': passing,
-      'ballHandling': ballHandling, // Include the new attributes
-      'perimeterDefense': perimeterDefense, // Include the new attributes
-      'postDefense': postDefense, // Include the new attributes
-      'insideShooting': insideShooting, // Include the new attribute
-      'performances': performances,  // Include the performances map
+      'height': height.toString(),
+      'shooting': shooting.toString(),
+      'rebounding': rebounding.toString(),
+      'passing': passing.toString(),
+      'ballHandling': ballHandling.toString(),
+      'perimeterDefense': perimeterDefense.toString(),
+      'postDefense': postDefense.toString(),
+      'insideShooting': insideShooting.toString(),
+      'performances': performances.map((key, value) => MapEntry(
+          key.toString(), value.map((stat, num) => MapEntry(stat, num.toString())))),
     };
   }
 
-  // Factory method to create a Player from a Map (useful when reading from a database)
+   // Factory method to create a Player from a Map
   factory Player.fromMap(Map<String, dynamic> map) {
     return Player(
-      name: map['name'],
-      age: map['age'],
-      team: map['team'],
-      experienceYears: map['experienceYears'],
-      nationality: map['nationality'],
-      currentStatus: map['currentStatus'],
-      height: map['height'],
-      shooting: map['shooting'],
-      rebounding: map['rebounding'],
-      passing: map['passing'],
-      ballHandling: map['ballHandling'], // Deserialize new attribute
-      perimeterDefense: map['perimeterDefense'], // Deserialize new attribute
-      postDefense: map['postDefense'], // Deserialize new attribute
-      insideShooting: map['insideShooting'], // Deserialize new attribute
-      performances: Map<int, Map<String, int>>.from(map['performances'] ?? {}),  // Deserialize performances map
+      name: map['name'] ?? 'Unknown',
+      age: int.tryParse(map['age'].toString()) ?? 18,
+      team: map['team'] ?? 'Free Agent',
+      experienceYears: int.tryParse(map['experienceYears'].toString()) ?? 0,
+      nationality: map['nationality'] ?? 'Unknown',
+      currentStatus: map['currentStatus'] ?? 'Active',
+      height: int.tryParse(map['height'].toString()) ?? 180,
+      shooting: int.tryParse(map['shooting'].toString()) ?? 50,
+      rebounding: int.tryParse(map['rebounding'].toString()) ?? 50,
+      passing: int.tryParse(map['passing'].toString()) ?? 50,
+      ballHandling: int.tryParse(map['ballHandling'].toString()) ?? 50,
+      perimeterDefense: int.tryParse(map['perimeterDefense'].toString()) ?? 50,
+      postDefense: int.tryParse(map['postDefense'].toString()) ?? 50,
+      insideShooting: int.tryParse(map['insideShooting'].toString()) ?? 50,
+      performances: (map['performances'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(
+              int.tryParse(key) ?? 0,
+              (value as Map<String, dynamic>)
+                  .map((stat, num) => MapEntry(stat, int.tryParse(num.toString()) ?? 0)),
+            ),
+          ) ??
+          {},
     );
   }
 }

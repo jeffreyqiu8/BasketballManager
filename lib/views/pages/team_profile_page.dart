@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:test1/gameData/player_class.dart';
-import 'package:test1/gameData/team_class.dart';
-import 'package:test1/views/pages/player_page.dart'; // Adjust the import to match where your PlayerPage is
+import 'package:BasketballManager/gameData/player_class.dart';
+import 'package:BasketballManager/gameData/team_class.dart';
+import 'package:BasketballManager/views/pages/player_page.dart'; // Adjust the import to match where your PlayerPage is
 
 class TeamProfilePage extends StatelessWidget {
   final Team team;

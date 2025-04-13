@@ -5,7 +5,7 @@ class PlayerPage extends StatelessWidget {
   final Player player;
 
   // Constructor to pass the Player data
-  PlayerPage({required this.player});
+  const PlayerPage({super.key, required this.player});
 
   @override
   Widget build(BuildContext context) {
@@ -13,6 +13,10 @@ class PlayerPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(player.name),
         centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back), 
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -98,76 +102,74 @@ class PlayerPage extends StatelessWidget {
   }
 
   // Helper function to display performance stats in a table format
-// Helper function to display performance stats in a more visually appealing layout
-Widget _buildPerformanceRow(int matchday, Map<String, int> performance) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8.0),
-    child: Card(
-      elevation: 4, // Adds a subtle shadow
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12), // Rounded corners for the card
-      ),
-      color: const Color.fromARGB(255, 72, 38, 89),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Matchday Header
-            Text(
-              "Matchday $matchday",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: const Color.fromARGB(255, 255, 255, 255),
+  Widget _buildPerformanceRow(int matchday, Map<String, int> performance) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Card(
+        elevation: 4, // Adds a subtle shadow
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12), // Rounded corners for the card
+        ),
+        color: const Color.fromARGB(255, 72, 38, 89),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Matchday Header
+              Text(
+                "Matchday $matchday",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: const Color.fromARGB(255, 255, 255, 255),
+                ),
               ),
-            ),
-            SizedBox(height: 12), // Add space between header and stats
+              SizedBox(height: 12), // Add space between header and stats
 
-            // Points, Rebounds, Assists
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatColumn("Points", "${performance['points']}"),
-                _buildStatColumn("Rebounds", "${performance['rebounds']}"),
-                _buildStatColumn("Assists", "${performance['assists']}"),
-              ],
-            ),
-            SizedBox(height: 12), // Add space between stats and shooting info
+              // Points, Rebounds, Assists
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatColumn("Points", "${performance['points']}"),
+                  _buildStatColumn("Rebounds", "${performance['rebounds']}"),
+                  _buildStatColumn("Assists", "${performance['assists']}"),
+                ],
+              ),
+              SizedBox(height: 12), // Add space between stats and shooting info
 
-            // Shooting Info (FG and 3PT)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatColumn("FG", "${performance['FGM']}/${performance['FGA']}"),
-                _buildStatColumn("FG%", "${performance['FG%']}%"),
-                _buildStatColumn("3PT", "${performance['3PM']}/${performance['3PA']}"),
-                _buildStatColumn("3PT%", "${performance['3PT%']}%"),
-              ],
-            ),
-          ],
+              // Shooting Info (FG and 3PT)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatColumn("FG", "${performance['FGM']}/${performance['FGA']}"),
+                  _buildStatColumn("FG%", "${performance['FG%']}%"),
+                  _buildStatColumn("3PT", "${performance['3PM']}/${performance['3PA']}"),
+                  _buildStatColumn("3PT%", "${performance['3PT%']}%"),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-// Helper function to build a stat column with label and value
-Widget _buildStatColumn(String label, String value) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-      Text(
-        label,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: const Color.fromARGB(255, 255, 255, 255)),
-      ),
-      SizedBox(height: 4),
-      Text(
-        value,
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 255, 255, 255)),
-      ),
-    ],
-  );
-}
-
+  // Helper function to build a stat column with label and value
+  Widget _buildStatColumn(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: const Color.fromARGB(255, 255, 255, 255)),
+        ),
+        SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: const Color.fromARGB(255, 255, 255, 255)),
+        ),
+      ],
+    );
+  }
 }

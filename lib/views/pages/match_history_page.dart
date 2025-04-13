@@ -1,3 +1,4 @@
+import 'package:BasketballManager/views/pages/match_page.dart';
 import 'package:flutter/material.dart';
 import 'package:BasketballManager/gameData/conference_class.dart'; // Assuming Conference is imported
 
@@ -5,14 +6,14 @@ class MatchHistoryPage extends StatelessWidget {
   final Conference conference;
 
   // Constructor for MatchHistoryPage widget
-  MatchHistoryPage({Key? key, required this.conference}) : super(key: key);
+  const MatchHistoryPage({super.key, required this.conference});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Match History'),
-      ),
+    ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView.builder(
@@ -20,6 +21,16 @@ class MatchHistoryPage extends StatelessWidget {
           itemBuilder: (context, index) {
             var game = conference.schedule[index];
             return ListTile(
+              onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return MatchPage(conference: conference, matchday: game['matchday'], hometeam: game['home'],);
+                            },
+                          ),
+                        );
+                      },
               title: Text('Matchday ${game['matchday']} : ${game['home']} vs ${game['away']}'),
               subtitle: Text(
                 'Score: ${game['homeScore']} - ${game['awayScore']}',

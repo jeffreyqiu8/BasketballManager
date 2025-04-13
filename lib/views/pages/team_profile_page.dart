@@ -1,102 +1,121 @@
 import 'package:flutter/material.dart';
 import 'package:BasketballManager/gameData/player_class.dart';
 import 'package:BasketballManager/gameData/team_class.dart';
-import 'package:BasketballManager/views/pages/player_page.dart'; // Adjust the import to match where your PlayerPage is
+import 'package:BasketballManager/views/pages/player_page.dart';
 
 class TeamProfilePage extends StatelessWidget {
   final Team team;
 
-  // Constructor to initialize the team
-  TeamProfilePage({required this.team});
+  const TeamProfilePage({super.key, required this.team});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Dark background for the page
+      backgroundColor: const Color(0xFF121212), // True dark background
       appBar: AppBar(
-        title: Text('${team.name}'),
-        backgroundColor: Colors.deepPurple, // Dark purple background for app bar
-        elevation: 0,
-        foregroundColor: Colors.white, // White text in app bar
+        title: Text(team.name),
+        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+        foregroundColor: Colors.white,
+        elevation: 3,
+        centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Team Name and Record
+            // 🏀 Team Info
             Text(
-              '${team.name}',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white, // White text for the team name
-                  ),
+              team.name,
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               'Record: ${team.wins} - ${team.losses}',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.deepPurpleAccent, // Purple color for the record
-                  ),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.deepPurpleAccent.shade100,
+              ),
             ),
-            const SizedBox(height: 20),
 
-            // Players List
+            const SizedBox(height: 25),
+            const Text(
+              'Players',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // 👥 Player List
             Expanded(
-              child: ListView.builder(
+              child: ListView.separated(
                 itemCount: team.players.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   Player player = team.players[index];
                   return GestureDetector(
                     onTap: () {
-                      // Navigate to Player Page
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return PlayerPage(player: player);
-                          },
-                        ),
+                        MaterialPageRoute(builder: (_) => PlayerPage(player: player)),
                       );
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Row(
-                        children: [
-                          // Player Initials (for simplicity)
-                          CircleAvatar(
-                            radius: 24,
-                            backgroundColor: Colors.deepPurple, // Purple background for initials
-                            child: Text(
-                              player.name.substring(0, 1),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: Colors.white, // White text for initials
+                    child: Card(
+                      color: const Color(0xFF1E1E1E),
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Row(
+                          children: [
+                            // 🔵 Player Initials Avatar
+                            CircleAvatar(
+                              radius: 26,
+                              backgroundColor: Colors.deepPurpleAccent.shade200,
+                              child: Text(
+                                player.name.substring(0, 1).toUpperCase(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          // Player Name and Role (Minimized)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                player.name,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white, // White text for player name
+                            const SizedBox(width: 16),
+
+                            // 📄 Player Info
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  player.name,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '${player.age} | ${player.nationality}',
-                                style: TextStyle(
-                                  color: Colors.grey, // Grey for secondary info
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${player.age} yrs | ${player.nationality}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );

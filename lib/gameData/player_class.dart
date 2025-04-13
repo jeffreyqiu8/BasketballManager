@@ -1,4 +1,3 @@
-
 class Player {
   // General attributes
   String name;
@@ -13,15 +12,19 @@ class Player {
   int shooting;
   int rebounding;
   int passing;
-  
-  // New gameplay attributes
-  int ballHandling; // Added for ball control
-  int perimeterDefense; // Added for defense against outside players
-  int postDefense; // Added for defense against post players
-  int insideShooting; // Added for inside scoring ability
+  int ballHandling;
+  int perimeterDefense;
+  int postDefense;
+  int insideShooting;
 
-  // New attribute for performance tracking
-  Map<int, Map<String, int>> performances;  // Key is the matchday (int), and value is a map of stats (e.g., points, rebounds, assists)
+  // Performance tracking per matchday
+  Map<int, Map<String, int>> performances;
+
+  // Season Totals
+  int points;
+  int rebounds;
+  int assists;
+  int gamesPlayed;
 
   // Constructor
   Player({
@@ -35,60 +38,79 @@ class Player {
     required this.shooting,
     required this.rebounding,
     required this.passing,
-    required this.ballHandling, // Added parameter
-    required this.perimeterDefense, // Added parameter
-    required this.postDefense, // Added parameter
-    required this.insideShooting, // Added parameter
-    required this.performances, // New parameter
+    required this.ballHandling,
+    required this.perimeterDefense,
+    required this.postDefense,
+    required this.insideShooting,
+    required this.performances,
+    this.points = 0,
+    this.rebounds = 0,
+    this.assists = 0,
+    this.gamesPlayed = 0, 
   });
 
-  // Method to display player's details
+
+  // Display player info
   String displayInfo() {
     return 'Player: $name\nAge: $age\nTeam: $team\nExperience: $experienceYears years\nNationality: $nationality\nStatus: $currentStatus';
   }
 
-  // Method to update team
   void updateTeam(String newTeam) {
     team = newTeam;
   }
 
-  // Method to update status
   void updateStatus(String newStatus) {
     currentStatus = newStatus;
   }
 
-  // Method to increment years of experience
   void addExperience(int years) {
     experienceYears += years;
   }
 
-  // Method to retire the player
   void retire() {
     currentStatus = 'Retired';
   }
 
-  // Method to record performance for a matchday
+  // Record matchday performance
   void recordPerformance(int matchday, List<int> stats) {
+    // Only increment gamesPlayed if this matchday wasn't already recorded
+    if (!performances.containsKey(matchday)) {
+      gamesPlayed++;
+    }
+
     performances[matchday] = {
       'points': stats[0],
       'rebounds': stats[1],
       'assists': stats[2],
-      'FGM' : stats[3],
-      'FGA' : stats[4],
-      '3PM' : stats[5],
-      '3PA' : stats[6],
-      'FG%' : ((stats[3]/stats[4]) * 100).round(),
-      '3PT%' : ((stats[5]/stats[6]) * 100).round(),
+      'FGM': stats[3],
+      'FGA': stats[4],
+      '3PM': stats[5],
+      '3PA': stats[6],
+      'FG%': stats[4] > 0 ? ((stats[3] / stats[4]) * 100).round() : 0,
+      '3PT%': stats[6] > 0 ? ((stats[5] / stats[6]) * 100).round() : 0,
     };
+
+    updateSeasonTotals();
   }
 
-  // Method to get the performance for a specific matchday
   Map<String, int>? getPerformance(int matchday) {
     return performances[matchday];
   }
 
-  // Method to return the player's current attributes as a map (useful for saving to a database, like Firestore)
-   Map<String, dynamic> toMap() {
+  void updateSeasonTotals() {
+    points = 0;
+    rebounds = 0;
+    assists = 0;
+
+    for (var game in performances.values) {
+      points += game['points'] ?? 0;
+      rebounds += game['rebounds'] ?? 0;
+      assists += game['assists'] ?? 0;
+    }
+  }
+
+  // toMap
+  Map<String, dynamic> toMap() {
     return {
       'name': name,
       'age': age.toString(),
@@ -104,12 +126,20 @@ class Player {
       'perimeterDefense': perimeterDefense.toString(),
       'postDefense': postDefense.toString(),
       'insideShooting': insideShooting.toString(),
-      'performances': performances.map((key, value) => MapEntry(
-          key.toString(), value.map((stat, num) => MapEntry(stat, num.toString())))),
+      'points': points.toString(),
+      'rebounds': rebounds.toString(),
+      'assists': assists.toString(),
+      'gamesPlayed': gamesPlayed.toString(), // 👈 include in map
+      'performances': performances.map(
+        (key, value) => MapEntry(
+          key.toString(),
+          value.map((stat, num) => MapEntry(stat, num.toString())),
+        ),
+      ),
     };
   }
 
-   // Factory method to create a Player from a Map
+  // fromMap
   factory Player.fromMap(Map<String, dynamic> map) {
     return Player(
       name: map['name'] ?? 'Unknown',
@@ -126,11 +156,16 @@ class Player {
       perimeterDefense: int.tryParse(map['perimeterDefense'].toString()) ?? 50,
       postDefense: int.tryParse(map['postDefense'].toString()) ?? 50,
       insideShooting: int.tryParse(map['insideShooting'].toString()) ?? 50,
+      points: int.tryParse(map['points']?.toString() ?? '0') ?? 0,
+      rebounds: int.tryParse(map['rebounds']?.toString() ?? '0') ?? 0,
+      assists: int.tryParse(map['assists']?.toString() ?? '0') ?? 0,
+      gamesPlayed: int.tryParse(map['gamesPlayed']?.toString() ?? '0') ?? 0, // 👈 load it
       performances: (map['performances'] as Map<String, dynamic>?)?.map(
             (key, value) => MapEntry(
               int.tryParse(key) ?? 0,
-              (value as Map<String, dynamic>)
-                  .map((stat, num) => MapEntry(stat, int.tryParse(num.toString()) ?? 0)),
+              (value as Map<String, dynamic>).map(
+                (stat, num) => MapEntry(stat, int.tryParse(num.toString()) ?? 0),
+              ),
             ),
           ) ??
           {},

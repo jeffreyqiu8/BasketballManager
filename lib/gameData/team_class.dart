@@ -35,9 +35,9 @@ class Team {
 
   void clearTeamPerformances() {
     for (var player in players) {
-      player.performances.clear();  // Call the clearPerformances method for each player
+      player.performances.clear();// Call the clearPerformances method for each player
+      player.gamesPlayed = 0;  
     }
-    print('All player performances have been cleared.');
   }
   // Method to update wins and losses after a game
   void updateRecord(bool isWin) {

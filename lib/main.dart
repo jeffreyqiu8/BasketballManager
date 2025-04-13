@@ -28,10 +28,15 @@ class _MyAppState extends State<MyApp> {
       builder: (BuildContext context, dynamic isDarkMode, Widget? child) {
         return  MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.purple,
-            brightness: isDarkMode? Brightness.dark: Brightness.light,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: const Color.fromARGB(255, 29, 29, 29),
+          colorScheme: ColorScheme.dark(
+            primary: const Color.fromARGB(255, 82, 50, 168),
+            secondary: const Color.fromARGB(255, 63, 18, 71),
+          ),
+          cardColor: const Color(0xFF1E1E1E),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color.fromARGB(255, 29, 29, 29),
           ),
         ),
         home: LoginPage(),

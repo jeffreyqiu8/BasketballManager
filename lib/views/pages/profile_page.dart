@@ -9,7 +9,7 @@ import 'package:BasketballManager/views/pages/welcome_page.dart';
 class ProfilePage extends StatefulWidget {
   final Game game;  // This is the object the widget will accept
   
-  const ProfilePage({Key? key, required this.game}) : super(key: key);
+  const ProfilePage({super.key, required this.game});
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }

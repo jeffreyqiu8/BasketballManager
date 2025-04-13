@@ -13,7 +13,7 @@ import 'package:BasketballManager/views/widgets/navbar_widget.dart';
 class WidgetTree extends StatelessWidget {
   final Game game;  // This is the object the widget will accept
   
-  const WidgetTree({Key? key, required this.game}) : super(key: key);
+  const WidgetTree({super.key, required this.game});
 
   
   @override
@@ -30,7 +30,7 @@ class WidgetTree extends StatelessWidget {
         children: <Widget>[
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Colors.deepPurple,
+              color: const Color.fromARGB(255, 59, 34, 104),
             ),
             child: Text(
               'Manager Dashboard',

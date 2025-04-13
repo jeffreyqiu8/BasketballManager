@@ -4,6 +4,8 @@ import 'package:BasketballManager/views/pages/signup_page';
 import 'package:BasketballManager/views/pages/welcome_page.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }

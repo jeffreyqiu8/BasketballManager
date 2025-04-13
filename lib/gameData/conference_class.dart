@@ -49,6 +49,17 @@ class Conference {
   List<Team> get getTeams => teams;
   int get getMatchday => matchday;  // Getter for matchday
 
+  Team getTeam(String name) {
+    return teams.firstWhere((team) {
+      return team.name == name;
+    });
+  }
+
+  Map<String, dynamic> getMatch(String homeTeam, int matchday) {
+    return schedule.firstWhere((game) {
+      return game['home'] == homeTeam && game['matchday'] == matchday;
+    });
+  }
   // Method to get the schedule for a specific team
   List<Map<String, dynamic>> getScheduleForTeam(String teamName) {
     // Filter the games where the team is either the home or away team

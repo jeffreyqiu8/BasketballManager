@@ -10,7 +10,8 @@ class GameService {
             .collection('users') // User's document
             .doc(userId) // Document using userId
             .collection('gameFiles') // Subcollection for game data
-            .add(game.toMap());
+            .doc(game.currentManager.name)
+            .set(game.toMap());
       print('Game saved successfully!');
     } catch (e) {
       print('Error saving game: $e');

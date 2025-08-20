@@ -21,7 +21,7 @@ class WelcomePage extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 100.0,
-                letterSpacing: 50.0,
+                letterSpacing: 10.0,
                 ),
               ),
             ),

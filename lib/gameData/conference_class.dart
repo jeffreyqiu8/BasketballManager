@@ -15,9 +15,9 @@ class Conference {
           return Team(
             name: 'Team ${String.fromCharCode(65 + i)}', // Team A, Team B, ..., Team H
             reputation: Random().nextInt(100), // Random reputation between 0-100
-            playerCount: 5, // Each team has 5 players
-            teamSize: 5, // Fixed size of 5 players
-            players: List.generate(5, (index) {
+            playerCount: 15, // Each team has 5 players
+            teamSize: 15, // Fixed size of 5 players
+            players: List.generate(15, (index) {
               // Generate 5 players for each team
               return Player(
                 name: 'Player ${String.fromCharCode(65 + i)}-${index + 1}', // Player names like Player A-1, Player A-2...
@@ -36,8 +36,8 @@ class Conference {
                 insideShooting: 5 + Random().nextInt(15),
                 performances: {},
               );
-            }),
-          );
+            }) ,
+          ) ;
         }) {
     // Automatically generate the schedule upon initialization of the conference
     generateSchedule();
@@ -68,6 +68,7 @@ class Conference {
     }).toList();
   }
 
+  
 
   // Generate a round robin schedule where each team plays against every other team
   void generateSchedule() {

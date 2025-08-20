@@ -59,7 +59,8 @@ class _ManagerProfilePageState extends State<ManagerProfilePage> {
             .collection('users') // User's document
             .doc(userId) // Document using userId
             .collection('gameFiles') // Subcollection for game data
-            .add(game.toMap());
+            .doc(game.currentManager.name)
+            .set(game.toMap());
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(

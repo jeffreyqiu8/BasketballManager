@@ -21,7 +21,7 @@ class WidgetTree extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         
-      title: Text('Basketball Manager'),
+      title: Text(game.currentConference.teams[game.currentManager.team].name),
       centerTitle: true,
     ),
       drawer: Drawer(

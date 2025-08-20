@@ -1,4 +1,5 @@
 import 'package:BasketballManager/gameData/player_class.dart';
+import 'package:BasketballManager/views/pages/player_page.dart';
 import 'package:flutter/material.dart';
 import 'package:BasketballManager/gameData/game_class.dart';
 import 'package:BasketballManager/gameData/team_class.dart';
@@ -119,38 +120,54 @@ class _HomePageState extends State<HomePage> {
             Text('Top Performers', style: _sectionTitleStyle()),
             const SizedBox(height: 10),
             Column(
-              children: topPerformers
-                  .map((player) => _glassCard(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 22,
-                              backgroundColor: Colors.grey[800],
-                              child: Text(
-                                player.name[0],
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  player.name,
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  '${(player.points / (player.gamesPlayed != 0? player.gamesPlayed : 1)).toInt()} PPG | ${(player.rebounds / (player.gamesPlayed != 0? player.gamesPlayed : 1)).toInt()} REB',
-                                  style: TextStyle(color: Colors.grey[400], fontSize: 13),
-                                ),
-                              ],
-                            )
-                          ],
+              children: topPerformers.map((player) {
+                return _glassCard(
+                  padding: const EdgeInsets.all(12),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PlayerPage(player: player),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: Colors.grey[800],
+                        child: Text(
+                          player.name[0],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
                         ),
-                      ))
-                  .toList(),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            player.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '${(player.points / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt()} PPG | ${(player.rebounds / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt()} REB | ${(player.assists / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt()} AST',
+                            style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
+
 
             const SizedBox(height: 30),
 

@@ -26,7 +26,7 @@ class WelcomePage extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20),
-            FilledButton(
+            FilledButton( 
               onPressed: () {
                 Navigator.pushReplacement(
                   context,

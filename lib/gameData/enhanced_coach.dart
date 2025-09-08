@@ -100,6 +100,11 @@ class CoachProfile extends Manager {
     }
   }
 
+  /// Check and unlock new achievements (public method for testing)
+  void checkForNewAchievements() {
+    _checkForNewAchievements();
+  }
+
   /// Check and unlock new achievements
   void _checkForNewAchievements() {
     // Check for experience-based achievements

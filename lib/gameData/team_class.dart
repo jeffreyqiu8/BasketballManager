@@ -24,7 +24,7 @@ class Team {
   }) : starters = starters ?? players.take(5).toList(); // Default first 5 players as starters if not specified
 
   // Method to add a player to the team
-  void addPlayer(Player player) {
+  void addPlayer(dynamic player) {
     if (playerCount < teamSize) {
       players.add(player);
       playerCount++;

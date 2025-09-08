@@ -1,5 +1,6 @@
 import 'player_class.dart';
 import 'enums.dart';
+import 'role_manager.dart';
 
 /// Enhanced player class that extends the base Player with role and development features
 class EnhancedPlayer extends Player {
@@ -36,44 +37,95 @@ class EnhancedPlayer extends Player {
     super.gamesPlayed = 0,
     
     // Enhanced properties
-    required this.primaryRole,
+    PlayerRole? primaryRole,
     this.secondaryRole,
-    this.roleCompatibility = 1.0,
+    double? roleCompatibility,
     Map<PlayerRole, double>? roleExperience,
     PlayerPotential? potential,
     DevelopmentTracker? development,
   }) : roleExperience = roleExperience ?? {for (var role in PlayerRole.values) role: 0.0},
        potential = potential ?? PlayerPotential.defaultPotential(),
-       development = development ?? DevelopmentTracker.initial();
+       development = development ?? DevelopmentTracker.initial(),
+       primaryRole = primaryRole ?? PlayerRole.pointGuard,
+       roleCompatibility = 0.0 {
+    // If no primary role was specified, assign the best role
+    if (primaryRole == null) {
+      this.primaryRole = getBestRole();
+    }
+    
+    // Calculate role compatibility after initialization
+    this.roleCompatibility = roleCompatibility ?? calculateRoleCompatibility(this.primaryRole);
+  }
 
   /// Calculate role compatibility based on player attributes and assigned role
   double calculateRoleCompatibility(PlayerRole role) {
-    switch (role) {
-      case PlayerRole.pointGuard:
-        return (ballHandling * 0.4 + passing * 0.4 + shooting * 0.2) / 100.0;
-      case PlayerRole.shootingGuard:
-        return (shooting * 0.5 + ballHandling * 0.3 + perimeterDefense * 0.2) / 100.0;
-      case PlayerRole.smallForward:
-        return (shooting * 0.3 + rebounding * 0.3 + perimeterDefense * 0.2 + ballHandling * 0.2) / 100.0;
-      case PlayerRole.powerForward:
-        return (rebounding * 0.4 + insideShooting * 0.3 + postDefense * 0.3) / 100.0;
-      case PlayerRole.center:
-        return (rebounding * 0.4 + postDefense * 0.4 + insideShooting * 0.2) / 100.0;
+    return RoleManager.calculateRoleCompatibility(this, role);
+  }
+
+  /// Get all role compatibilities for this player
+  Map<PlayerRole, double> getAllRoleCompatibilities() {
+    return RoleManager.getAllRoleCompatibilities(this);
+  }
+
+  /// Get the best role for this player
+  PlayerRole getBestRole() {
+    return RoleManager.getBestRole(this);
+  }
+
+  /// Validate role assignment
+  bool isValidRoleAssignment(PlayerRole role) {
+    final compatibility = calculateRoleCompatibility(role);
+    return compatibility >= 0.6; // Minimum compatibility threshold
+  }
+
+  /// Assign a new primary role with validation
+  bool assignPrimaryRole(PlayerRole newRole) {
+    if (isValidRoleAssignment(newRole)) {
+      primaryRole = newRole;
+      roleCompatibility = calculateRoleCompatibility(newRole);
+      return true;
     }
+    return false;
+  }
+
+  /// Assign a secondary role with validation
+  bool assignSecondaryRole(PlayerRole newRole) {
+    if (newRole != primaryRole && isValidRoleAssignment(newRole)) {
+      secondaryRole = newRole;
+      return true;
+    }
+    return false;
   }
 
   /// Get role-based performance bonuses
   Map<String, double> getRoleBonuses() {
-    double compatibility = calculateRoleCompatibility(primaryRole);
-    double bonus = (compatibility - 0.5) * 0.2; // -10% to +10% based on compatibility
+    return RoleManager.getRoleBonuses(this, primaryRole);
+  }
+
+  /// Get out-of-position penalties
+  Map<String, double> getOutOfPositionPenalties() {
+    return RoleManager.getOutOfPositionPenalties(this, primaryRole);
+  }
+
+  /// Calculate role-based performance modifiers for game simulation
+  Map<String, double> calculateRoleBasedModifiers() {
+    final bonuses = getRoleBonuses();
+    final penalties = getOutOfPositionPenalties();
     
-    return {
-      'shooting': primaryRole == PlayerRole.shootingGuard ? bonus : 0.0,
-      'rebounding': [PlayerRole.powerForward, PlayerRole.center].contains(primaryRole) ? bonus : 0.0,
-      'passing': primaryRole == PlayerRole.pointGuard ? bonus : 0.0,
-      'ballHandling': [PlayerRole.pointGuard, PlayerRole.shootingGuard].contains(primaryRole) ? bonus : 0.0,
-      'defense': bonus * 0.5, // All positions get some defensive bonus
-    };
+    // Combine bonuses and penalties
+    final Map<String, double> modifiers = {};
+    
+    // Apply bonuses
+    for (final entry in bonuses.entries) {
+      modifiers[entry.key] = entry.value;
+    }
+    
+    // Apply penalties (multiply with existing bonuses)
+    for (final entry in penalties.entries) {
+      modifiers[entry.key] = (modifiers[entry.key] ?? 1.0) * entry.value;
+    }
+    
+    return modifiers;
   }
 
   /// Award experience for playing in a specific role
@@ -100,6 +152,40 @@ class EnhancedPlayer extends Player {
       'development': development.toMap(),
     });
     return baseMap;
+  }
+
+  /// Create an EnhancedPlayer from a regular Player
+  factory EnhancedPlayer.fromPlayer(Player player, {
+    PlayerRole? primaryRole,
+    PlayerRole? secondaryRole,
+    PlayerPotential? potential,
+    DevelopmentTracker? development,
+  }) {
+    return EnhancedPlayer(
+      name: player.name,
+      age: player.age,
+      team: player.team,
+      experienceYears: player.experienceYears,
+      nationality: player.nationality,
+      currentStatus: player.currentStatus,
+      height: player.height,
+      shooting: player.shooting,
+      rebounding: player.rebounding,
+      passing: player.passing,
+      ballHandling: player.ballHandling,
+      perimeterDefense: player.perimeterDefense,
+      postDefense: player.postDefense,
+      insideShooting: player.insideShooting,
+      performances: player.performances,
+      points: player.points,
+      rebounds: player.rebounds,
+      assists: player.assists,
+      gamesPlayed: player.gamesPlayed,
+      primaryRole: primaryRole,
+      secondaryRole: secondaryRole,
+      potential: potential,
+      development: development,
+    );
   }
 
   factory EnhancedPlayer.fromMap(Map<String, dynamic> map) {

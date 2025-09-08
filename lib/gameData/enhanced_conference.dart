@@ -1,5 +1,6 @@
 import 'conference_class.dart';
 import 'team_class.dart';
+import 'enhanced_game_simulation.dart';
 
 /// Enhanced conference class that extends the base Conference with divisions and advanced features
 class EnhancedConference extends Conference {
@@ -159,6 +160,101 @@ class EnhancedConference extends Conference {
     }
     
     return divisionStandings;
+  }
+
+  /// Play next matchday with enhanced role-based simulation
+  void playNextMatchdayEnhanced() {
+    // Get all the games for the current matchday
+    List<Map<String, dynamic>> currentMatchdayGames = schedule
+        .where((game) => game['matchday'] == matchday)
+        .toList();
+
+    if (currentMatchdayGames.isEmpty) {
+      print('No more games to play.');
+      return;
+    }
+
+    print('Playing matchday $matchday with enhanced simulation');
+
+    // Simulate the results of the games using enhanced simulation
+    for (var game in currentMatchdayGames) {
+      Team homeTeam = teams.firstWhere((team) => team.name == game['home']);
+      Team awayTeam = teams.firstWhere((team) => team.name == game['away']);
+
+      // Use enhanced game simulation
+      final result = EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, matchday);
+
+      // Update the game scores in the schedule
+      game['homeScore'] = result['homeScore'];
+      game['awayScore'] = result['awayScore'];
+
+      // Update team statistics
+      _updateTeamStatistics(homeTeam.name, result['homeBoxScore'], true);
+      _updateTeamStatistics(awayTeam.name, result['awayBoxScore'], false);
+
+      // Update the win/loss record for each team
+      if (result['homeScore'] > result['awayScore']) {
+        homeTeam.updateRecord(true);  // Home team wins
+        awayTeam.updateRecord(false); // Away team loses
+      } else if (result['homeScore'] < result['awayScore']) {
+        homeTeam.updateRecord(false); // Home team loses
+        awayTeam.updateRecord(true);  // Away team wins
+      }
+    }
+
+    // Update standings after all games are played
+    updateStandings();
+
+    // After playing the current matchday, increment the matchday
+    matchday++;
+  }
+
+  /// Update team statistics based on game results
+  void _updateTeamStatistics(String teamName, Map<String, Map<String, int>> boxScore, bool isHome) {
+    TeamStats stats = teamStatistics[teamName] ?? TeamStats.empty();
+    
+    // Calculate team totals from box score
+    int totalPoints = 0;
+    int totalFGM = 0;
+    int totalFGA = 0;
+    int total3PM = 0;
+    int total3PA = 0;
+    int totalRebounds = 0;
+    int totalAssists = 0;
+    int totalTurnovers = 0;
+    int totalSteals = 0;
+    int totalBlocks = 0;
+
+    for (final playerStats in boxScore.values) {
+      totalPoints += playerStats['points'] ?? 0;
+      totalFGM += playerStats['FGM'] ?? 0;
+      totalFGA += playerStats['FGA'] ?? 0;
+      total3PM += playerStats['3PM'] ?? 0;
+      total3PA += playerStats['3PA'] ?? 0;
+      totalRebounds += playerStats['rebounds'] ?? 0;
+      totalAssists += playerStats['assists'] ?? 0;
+      totalTurnovers += playerStats['turnovers'] ?? 0;
+      totalSteals += playerStats['steals'] ?? 0;
+      totalBlocks += playerStats['blocks'] ?? 0;
+    }
+
+    // Update cumulative statistics
+    stats.pointsFor += totalPoints;
+    stats.reboundsPerGame = (stats.reboundsPerGame + totalRebounds) / 2; // Simple average
+    stats.assistsPerGame = (stats.assistsPerGame + totalAssists) / 2;
+    stats.turnoversPerGame = (stats.turnoversPerGame + totalTurnovers) / 2;
+    stats.stealsPerGame = (stats.stealsPerGame + totalSteals) / 2;
+    stats.blocksPerGame = (stats.blocksPerGame + totalBlocks) / 2;
+    
+    if (totalFGA > 0) {
+      stats.fieldGoalPercentage = (stats.fieldGoalPercentage + (totalFGM / totalFGA)) / 2;
+    }
+    
+    if (total3PA > 0) {
+      stats.threePointPercentage = (stats.threePointPercentage + (total3PM / total3PA)) / 2;
+    }
+
+    teamStatistics[teamName] = stats;
   }
 
   @override

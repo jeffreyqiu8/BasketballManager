@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/gameData/enhanced_game_simulation.dart';
-import '../lib/gameData/enhanced_player.dart';
-import '../lib/gameData/team_class.dart';
-import '../lib/gameData/enums.dart';
+import 'package:BasketballManager/gameData/enhanced_game_simulation.dart';
+import 'package:BasketballManager/gameData/enhanced_player.dart';
+import 'package:BasketballManager/gameData/team_class.dart';
+import 'package:BasketballManager/gameData/enums.dart';
 
 void main() {
   group('EnhancedGameSimulation Tests', () {
@@ -776,7 +776,7 @@ void main() {
               performances: {},
               primaryRole: PlayerRole.pointGuard,
             ),
-            ...homeTeam.players.skip(1).take(4).toList(),
+            ...homeTeam.players.skip(1).take(4),
           ],
         );
 

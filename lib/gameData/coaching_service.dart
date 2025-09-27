@@ -1,5 +1,6 @@
 import 'enhanced_coach.dart';
 import 'enhanced_player.dart';
+import 'development_system.dart';
 import 'enums.dart';
 
 /// Service class to manage coach effects on team performance and player development
@@ -82,16 +83,22 @@ class CoachingService {
   }
 
   /// Get potential-based development bonus
-  static double _getPotentialBonus(PlayerPotential potential) {
+  static double _getPotentialBonus(dynamic potential) {
     // Higher potential players benefit more from good coaching
-    final averagePotential = potential.maxSkills.values
-        .fold<double>(0.0, (sum, value) => sum + value) / 
-        potential.maxSkills.length;
+    if (potential == null) return 0.0;
     
-    if (averagePotential >= 90) return 0.15; // Elite potential
-    if (averagePotential >= 80) return 0.10; // High potential
-    if (averagePotential >= 70) return 0.05; // Good potential
-    return 0.0; // Average or below potential
+    try {
+      final averagePotential = potential.maxSkills.values
+          .fold<double>(0.0, (sum, value) => sum + value) / 
+          potential.maxSkills.length;
+      
+      if (averagePotential >= 90) return 0.15; // Elite potential
+      if (averagePotential >= 80) return 0.10; // High potential
+      if (averagePotential >= 70) return 0.05; // Good potential
+      return 0.0; // Average or below potential
+    } catch (e) {
+      return 0.0; // Fallback if potential structure is unexpected
+    }
   }
 
   /// Apply coaching effects to player experience gain
@@ -147,7 +154,7 @@ class CoachingService {
     // Provide recommendations based on coach specialization and team needs
     if (coach.primarySpecialization == CoachingSpecialization.playerDevelopment) {
       if (youngPlayers >= 3) {
-        recommendations.add('Focus on developing young talent - you have ${youngPlayers} players under 25');
+        recommendations.add('Focus on developing young talent - you have $youngPlayers players under 25');
       }
       if (youngPlayers < 2) {
         recommendations.add('Consider acquiring younger players to maximize your development specialization');

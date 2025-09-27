@@ -2,7 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:BasketballManager/gameData/coach_class.dart';
-import 'package:BasketballManager/gameData/conference_class.dart';
+import 'package:BasketballManager/gameData/enhanced_conference.dart';
+import 'package:BasketballManager/gameData/nba_conference_service.dart';
+import 'package:BasketballManager/gameData/team_generation_service.dart';
+import 'package:BasketballManager/gameData/nba_team_data.dart';
+import 'package:BasketballManager/gameData/enhanced_team.dart';
+import 'package:BasketballManager/gameData/player_class.dart';
 import 'package:BasketballManager/gameData/game_class.dart';
 import 'package:BasketballManager/views/widget_tree.dart';
 
@@ -30,11 +35,67 @@ class _ManagerProfilePageState extends State<ManagerProfilePage> {
   // List of available teams for selection (Team 1 to Team 8)
   List<String> teamNames = List.generate(8, (index) => 'Team ${index + 1}');
 
+  // Method to populate teams with players
+  void _populateTeamsWithPlayers(EnhancedConference conference) {
+    final nbaTeams = RealTeamData.getAllNBATeams();
+    
+    for (int i = 0; i < conference.teams.length && i < nbaTeams.length; i++) {
+      final team = conference.teams[i];
+      final nbaTeam = nbaTeams[i];
+      
+      if (team is EnhancedTeam && team.players.isEmpty) {
+        try {
+          // Generate a roster for this team
+          final generatedTeam = TeamGenerationService.generateNBATeamRoster(nbaTeam);
+          team.players = generatedTeam.players;
+          team.playerCount = generatedTeam.players.length;
+        } catch (e) {
+          // If generation fails, create a simple roster
+          team.players = _createSimpleRoster(team.name);
+          team.playerCount = team.players.length;
+        }
+      }
+    }
+  }
+
+  // Fallback method to create a simple roster if generation fails
+  List<Player> _createSimpleRoster(String teamName) {
+    List<Player> players = [];
+    List<String> nationalities = ['USA', 'Canada', 'Spain', 'France', 'Germany'];
+    
+    for (int i = 0; i < 15; i++) {
+      players.add(Player(
+        name: 'Player ${i + 1}',
+        age: 22 + (i % 10),
+        team: teamName,
+        experienceYears: i % 8,
+        nationality: nationalities[i % nationalities.length],
+        currentStatus: 'Active',
+        height: 180 + (i % 20),
+        shooting: 50 + (i % 30),
+        rebounding: 50 + (i % 30),
+        passing: 50 + (i % 30),
+        ballHandling: 50 + (i % 30),
+        perimeterDefense: 50 + (i % 30),
+        postDefense: 50 + (i % 30),
+        insideShooting: 50 + (i % 30),
+        performances: {},
+      ));
+    }
+    
+    return players;
+  }
+
   // Method to save profile and create game, manager, and conference
   Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
-      // Create a Conference with 8 teams
-      Conference conference = Conference(name: 'Eastern Conference');
+      // Generate NBA conferences with enhanced features
+      final conferences = NBAConferenceService.createNBAConferences();
+      EnhancedConference conference = conferences['Eastern']!;
+      
+      // Populate teams with players
+      _populateTeamsWithPlayers(conference);
+      
       final manager = Manager(
         name: _nameController.text,
         age: int.parse(_ageController.text),

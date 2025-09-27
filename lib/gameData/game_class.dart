@@ -1,15 +1,15 @@
 import 'package:BasketballManager/gameData/coach_class.dart';
-import 'package:BasketballManager/gameData/conference_class.dart';
+import 'package:BasketballManager/gameData/enhanced_conference.dart';
 
 class Game {
   Manager currentManager;
-  Conference currentConference;
+  EnhancedConference currentConference;
 
   
   Game({required this.currentManager, required this.currentConference});
   
   Manager get getCurrentManager => currentManager;
-  Conference get getCurrentConference => currentConference;
+  EnhancedConference get getCurrentConference => currentConference;
 
   // Convert the Game to a Map for storage (e.g., Firebase)
   Map<String, dynamic> toMap() {
@@ -23,7 +23,7 @@ class Game {
   factory Game.fromMap(Map<String, dynamic> map) {
     return Game(
       currentManager: Manager.fromMap(map['currentManager']  as Map<String, dynamic>),
-      currentConference: Conference.fromMap(map['currentConference'] as Map<String, dynamic>),
+      currentConference: EnhancedConference.fromMap(map['currentConference'] as Map<String, dynamic>),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/gameData/role_manager.dart';
-import '../lib/gameData/player_class.dart';
-import '../lib/gameData/enums.dart';
+import 'package:BasketballManager/gameData/role_manager.dart';
+import 'package:BasketballManager/gameData/player_class.dart';
+import 'package:BasketballManager/gameData/enums.dart';
 
 void main() {
   group('RoleManager Tests', () {

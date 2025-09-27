@@ -4,6 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:BasketballManager/gameData/game_class.dart';
 import 'package:BasketballManager/gameData/team_class.dart';
 import 'package:BasketballManager/views/pages/team_profile_page.dart';
+import 'package:BasketballManager/gameData/enhanced_player.dart';
+import 'package:BasketballManager/gameData/enhanced_coach.dart';
+import 'package:BasketballManager/gameData/coaching_service.dart';
+import 'package:BasketballManager/views/pages/coach_profile_page.dart';
+import 'package:BasketballManager/views/pages/player_development_page.dart';
+import 'package:BasketballManager/views/pages/conference_standings_page.dart';
+import 'package:BasketballManager/views/pages/playbook_manager_page.dart';
+import 'package:BasketballManager/gameData/enhanced_team.dart';
+import 'package:BasketballManager/gameData/enums.dart';
+import '../widgets/accessible_widgets.dart';
+import '../widgets/help_system.dart';
+import '../widgets/user_feedback_system.dart';
 
 class HomePage extends StatefulWidget {
   final Game game;
@@ -28,7 +40,7 @@ class _HomePageState extends State<HomePage> {
         orElse: () => {},
       );
     } catch (e) {
-      print("Error fetching current matchup: $e");
+      debugPrint("Error fetching current matchup: $e");
       return null;
     }
   }
@@ -39,11 +51,33 @@ class _HomePageState extends State<HomePage> {
     return sortedPlayers.take(count).toList();
   }
 
+  CoachProfile? getCoachProfile() {
+    // Try to cast current manager to CoachProfile
+    if (widget.game.currentManager is CoachProfile) {
+      return widget.game.currentManager as CoachProfile;
+    }
+    return null;
+  }
+
+  List<EnhancedPlayer> getEnhancedPlayers(Team team) {
+    return team.players.whereType<EnhancedPlayer>().toList();
+  }
+
+  List<EnhancedPlayer> getRecentlyDevelopedPlayers(Team team) {
+    final enhancedPlayers = getEnhancedPlayers(team);
+    return enhancedPlayers.where((player) {
+      // Check if player has gained experience recently (simplified check)
+      return player.development.totalExperience > 0;
+    }).take(3).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     Team managedTeam = getManagedTeam();
     Map<String, dynamic>? currentMatchup = getCurrentMatchup(managedTeam);
     List<Player> topPerformers = getTopPerformers(managedTeam);
+    CoachProfile? coach = getCoachProfile();
+    List<EnhancedPlayer> recentlyDeveloped = getRecentlyDevelopedPlayers(managedTeam);
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
@@ -56,6 +90,10 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: const Color(0xFF1E1E1E),
         foregroundColor: Colors.white,
         elevation: 2,
+        actions: [
+          HelpButton(contextId: 'home_page'),
+          FeedbackButton(feature: 'home_page'),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -63,11 +101,13 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 🔹 Team Card
-            _glassCard(
+            AccessibleCard(
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => TeamProfilePage(team: managedTeam)),
               ),
+              semanticLabel: 'Team ${managedTeam.name}, ${managedTeam.wins} wins, ${managedTeam.losses} losses',
+              semanticHint: 'Tap to view team profile',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -121,7 +161,11 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 10),
             Column(
               children: topPerformers.map((player) {
-                return _glassCard(
+                final ppg = (player.points / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt();
+                final rpg = (player.rebounds / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt();
+                final apg = (player.assists / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt();
+                
+                return AccessibleCard(
                   padding: const EdgeInsets.all(12),
                   onTap: () {
                     Navigator.push(
@@ -131,6 +175,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                     );
                   },
+                  semanticLabel: '${player.name}, averaging $ppg points, $rpg rebounds, $apg assists per game',
+                  semanticHint: 'Tap to view player details',
                   child: Row(
                     children: [
                       CircleAvatar(
@@ -157,7 +203,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           Text(
-                            '${(player.points / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt()} PPG | ${(player.rebounds / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt()} REB | ${(player.assists / (player.gamesPlayed != 0 ? player.gamesPlayed : 1)).toInt()} AST',
+                            '$ppg PPG | $rpg REB | $apg AST',
                             style: TextStyle(color: Colors.grey[400], fontSize: 13),
                           ),
                         ],
@@ -169,25 +215,243 @@ class _HomePageState extends State<HomePage> {
             ),
 
 
+            const SizedBox(height: 25),
+
+            // 🔹 Coaching Effectiveness (if coach profile exists)
+            if (coach != null) ...[
+              Text('Coaching Effectiveness', style: _sectionTitleStyle()),
+              const SizedBox(height: 10),
+              AccessibleCard(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CoachProfilePage(coach: coach)),
+                ),
+                semanticLabel: 'Coach ${coach.name}, ${CoachingService.calculateCoachingEffectiveness(coach).toStringAsFixed(1)}% effectiveness',
+                semanticHint: 'Tap to view coach profile and manage coaching staff',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Coach: ${coach.name}',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        Text(
+                          '${CoachingService.calculateCoachingEffectiveness(coach).toStringAsFixed(1)}%',
+                          style: TextStyle(fontSize: 16, color: Colors.green[400], fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Specialization: ${coach.primarySpecialization.displayName}',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
+                    Text(
+                      'Level ${coach.experienceLevel} • ${coach.achievements.length} Achievements',
+                      style: TextStyle(color: Colors.grey[400]),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // 🔹 Player Development Progress
+            if (recentlyDeveloped.isNotEmpty) ...[
+              Text('Recent Development', style: _sectionTitleStyle()),
+              const SizedBox(height: 10),
+              Column(
+                children: recentlyDeveloped.map((player) {
+                  return _glassCard(
+                    padding: const EdgeInsets.all(12),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PlayerDevelopmentPage(player: player),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.blue[800],
+                          child: Text(
+                            player.name[0],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                player.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                'Role: ${player.primaryRole.displayName} • XP: ${player.development.totalExperience}',
+                                style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.trending_up,
+                          color: Colors.green[400],
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // 🔹 Quick Navigation
+            Text('Quick Actions', style: _sectionTitleStyle()),
+            const SizedBox(height: 10),
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _quickActionButton(
+                        label: 'Conference',
+                        icon: Icons.leaderboard,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ConferenceStandingsPage(
+                                conference: widget.game.currentConference,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _quickActionButton(
+                        label: 'Playbook',
+                        icon: Icons.sports_basketball,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PlaybookManagerPage(
+                                team: managedTeam is EnhancedTeam 
+                                  ? managedTeam as EnhancedTeam
+                                  : EnhancedTeam(
+                                      name: managedTeam.name,
+                                      reputation: managedTeam.reputation,
+                                      playerCount: managedTeam.playerCount,
+                                      teamSize: managedTeam.teamSize,
+                                      players: managedTeam.players,
+                                      wins: managedTeam.wins,
+                                      losses: managedTeam.losses,
+                                      starters: managedTeam.starters,
+                                    ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _quickActionButton(
+                        label: 'Coach',
+                        icon: Icons.person_4,
+                        onPressed: () {
+                          // Create or get coach profile
+                          final coach = getCoachProfile() ?? CoachProfile(
+                            name: 'Head Coach',
+                            age: 45,
+                            team: 0, // Default team ID
+                            experienceYears: 10,
+                            nationality: 'USA',
+                            currentStatus: 'Active',
+                            primarySpecialization: CoachingSpecialization.offensive,
+                            secondarySpecialization: CoachingSpecialization.defensive,
+                            achievements: [],
+                            experienceLevel: 5,
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CoachProfilePage(coach: coach),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _quickActionButton(
+                        label: 'Development',
+                        icon: Icons.trending_up,
+                        onPressed: () {
+                          final enhancedPlayers = getEnhancedPlayers(managedTeam);
+                          if (enhancedPlayers.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PlayerDevelopmentPage(player: enhancedPlayers.first),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('No enhanced players available for development')),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
             const SizedBox(height: 30),
 
-            // 🔘 Buttons
-            _homeButton(
-              label: 'Play Next Game',
+            // 🔘 Game Buttons
+            AccessibleButton(
+              text: 'Play Next Game',
               icon: Icons.play_arrow_rounded,
               onPressed: () {
                 widget.game.currentConference.playNextMatchday();
                 setState(() {});
               },
+              semanticLabel: 'Play the next scheduled game',
             ),
             const SizedBox(height: 12),
-            _homeButton(
-              label: 'Regenerate Schedule',
+            AccessibleButton(
+              text: 'Regenerate Schedule',
               icon: Icons.refresh_rounded,
               onPressed: () {
                 widget.game.currentConference.generateSchedule();
                 setState(() {});
               },
+              semanticLabel: 'Generate a new game schedule',
             ),
           ],
         ),
@@ -208,11 +472,11 @@ class _HomePageState extends State<HomePage> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: padding,
         decoration: BoxDecoration(
-          color: Colors.grey[850]?.withOpacity(0.7),
+          color: Colors.grey[850]?.withValues(alpha: 0.7),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             )
@@ -246,5 +510,24 @@ class _HomePageState extends State<HomePage> {
   // 🔤 Section Heading Style
   TextStyle _sectionTitleStyle() {
     return const TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white);
+  }
+
+  // 🔘 Quick Action Button
+  Widget _quickActionButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label, style: const TextStyle(fontSize: 14)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color.fromARGB(255, 44, 44, 44),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 }

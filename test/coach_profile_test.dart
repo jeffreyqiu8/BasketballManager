@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/gameData/enhanced_coach.dart';
-import '../lib/gameData/enums.dart';
+import 'package:BasketballManager/gameData/enhanced_coach.dart';
+import 'package:BasketballManager/gameData/enums.dart';
 
 void main() {
   group('CoachProfile Tests', () {

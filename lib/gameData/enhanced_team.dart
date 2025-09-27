@@ -1,13 +1,15 @@
 import 'team_class.dart';
 import 'enhanced_player.dart';
+import 'enhanced_coach.dart';
 import 'playbook.dart';
 import 'enums.dart';
-import 'player_class.dart';
+import 'package:BasketballManager/gameData/player_class.dart';
 
 /// Enhanced team class that extends the base Team with role management and playbooks
 class EnhancedTeam extends Team {
   PlaybookLibrary playbookLibrary;
   Map<PlayerRole, EnhancedPlayer?> roleAssignments;
+  CoachProfile? coach;
   TeamBranding? branding;
   String? conference;
   String? division;
@@ -26,6 +28,7 @@ class EnhancedTeam extends Team {
     // Enhanced properties
     PlaybookLibrary? playbookLibrary,
     Map<PlayerRole, EnhancedPlayer?>? roleAssignments,
+    this.coach,
     this.branding,
     this.conference,
     this.division,
@@ -48,6 +51,7 @@ class EnhancedTeam extends Team {
   void _autoAssignRoles() {
     List<EnhancedPlayer> enhancedPlayers = players
         .whereType<EnhancedPlayer>()
+        .cast<EnhancedPlayer>()
         .toList();
     
     if (enhancedPlayers.isEmpty) return;
@@ -120,6 +124,7 @@ class EnhancedTeam extends Team {
     
     List<EnhancedPlayer> enhancedPlayers = players
         .whereType<EnhancedPlayer>()
+        .cast<EnhancedPlayer>()
         .toList();
     
     if (enhancedPlayers.isEmpty) return {};
@@ -257,10 +262,10 @@ class EnhancedTeam extends Team {
       reputation: baseTeam.reputation,
       playerCount: baseTeam.playerCount,
       teamSize: baseTeam.teamSize,
-      players: enhancedPlayers,
+      players: List<Player>.from(enhancedPlayers),
       wins: baseTeam.wins,
       losses: baseTeam.losses,
-      starters: enhancedPlayers.take(5).toList(),
+      starters: List<Player>.from(enhancedPlayers.take(5)),
       
       // Enhanced properties
       playbookLibrary: map['playbookLibrary'] != null

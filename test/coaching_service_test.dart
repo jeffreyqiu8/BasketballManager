@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/gameData/coaching_service.dart';
-import '../lib/gameData/enhanced_coach.dart';
-import '../lib/gameData/enhanced_player.dart';
-import '../lib/gameData/enums.dart';
+import 'package:BasketballManager/gameData/coaching_service.dart';
+import 'package:BasketballManager/gameData/enhanced_coach.dart';
+import 'package:BasketballManager/gameData/enhanced_player.dart';
+import 'package:BasketballManager/gameData/enums.dart';
 
 void main() {
   group('CoachingService Tests', () {

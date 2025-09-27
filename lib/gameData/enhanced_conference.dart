@@ -1,5 +1,7 @@
 import 'conference_class.dart';
 import 'team_class.dart';
+import 'enhanced_team.dart';
+import 'enhanced_coach.dart';
 import 'enhanced_game_simulation.dart';
 
 /// Enhanced conference class that extends the base Conference with divisions and advanced features
@@ -162,6 +164,12 @@ class EnhancedConference extends Conference {
     return divisionStandings;
   }
 
+  /// Override base playNextMatchday to use enhanced simulation
+  @override
+  void playNextMatchday() {
+    playNextMatchdayEnhanced();
+  }
+
   /// Play next matchday with enhanced role-based simulation
   void playNextMatchdayEnhanced() {
     // Get all the games for the current matchday
@@ -181,8 +189,29 @@ class EnhancedConference extends Conference {
       Team homeTeam = teams.firstWhere((team) => team.name == game['home']);
       Team awayTeam = teams.firstWhere((team) => team.name == game['away']);
 
-      // Use enhanced game simulation
-      final result = EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, matchday);
+      // Get coaches for both teams (if available)
+      CoachProfile? homeCoach;
+      CoachProfile? awayCoach;
+      
+      // Try to get coaches from enhanced teams
+      // TODO: Fix coach property access
+      // if (homeTeam is EnhancedTeam) {
+      //   final enhancedHome = homeTeam as EnhancedTeam;
+      //   homeCoach = enhancedHome.coach;
+      // }
+      // if (awayTeam is EnhancedTeam) {
+      //   final enhancedAway = awayTeam as EnhancedTeam;
+      //   awayCoach = enhancedAway.coach;
+      // }
+
+      // Use enhanced game simulation with coaching integration
+      final result = EnhancedGameSimulation.simulateGame(
+        homeTeam, 
+        awayTeam, 
+        matchday,
+        homeCoach: homeCoach,
+        awayCoach: awayCoach,
+      );
 
       // Update the game scores in the schedule
       game['homeScore'] = result['homeScore'];
@@ -191,6 +220,10 @@ class EnhancedConference extends Conference {
       // Update team statistics
       _updateTeamStatistics(homeTeam.name, result['homeBoxScore'], true);
       _updateTeamStatistics(awayTeam.name, result['awayBoxScore'], false);
+
+      // Update individual player statistics
+      _updatePlayerStatistics(homeTeam, result['homeBoxScore'], matchday);
+      _updatePlayerStatistics(awayTeam, result['awayBoxScore'], matchday);
 
       // Update the win/loss record for each team
       if (result['homeScore'] > result['awayScore']) {
@@ -255,6 +288,40 @@ class EnhancedConference extends Conference {
     }
 
     teamStatistics[teamName] = stats;
+  }
+
+  /// Update individual player statistics based on game box score
+  void _updatePlayerStatistics(Team team, Map<String, Map<String, int>> boxScore, int matchday) {
+    for (final playerName in boxScore.keys) {
+      // Find the player in the team
+      final player = team.players.firstWhere(
+        (p) => p.name == playerName,
+        orElse: () => throw Exception('Player $playerName not found in team ${team.name}'),
+      );
+
+      final playerStats = boxScore[playerName]!;
+
+      // Update season totals
+      player.points += playerStats['points'] ?? 0;
+      player.rebounds += playerStats['rebounds'] ?? 0;
+      player.assists += playerStats['assists'] ?? 0;
+      player.gamesPlayed += 1;
+
+      // Store individual game performance
+      player.performances[matchday] = {
+        'points': playerStats['points'] ?? 0,
+        'rebounds': playerStats['rebounds'] ?? 0,
+        'assists': playerStats['assists'] ?? 0,
+        'FGM': playerStats['FGM'] ?? 0,
+        'FGA': playerStats['FGA'] ?? 0,
+        '3PM': playerStats['3PM'] ?? 0,
+        '3PA': playerStats['3PA'] ?? 0,
+        'steals': playerStats['steals'] ?? 0,
+        'blocks': playerStats['blocks'] ?? 0,
+        'turnovers': playerStats['turnovers'] ?? 0,
+        'minutes': 25, // Default playing time - could be enhanced later
+      };
+    }
   }
 
   @override

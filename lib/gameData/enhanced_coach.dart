@@ -133,6 +133,29 @@ class CoachProfile extends Manager {
     return achievements.any((achievement) => achievement.name == achievementName);
   }
 
+  /// Get development bonus for player development
+  double getDevelopmentBonus() {
+    double bonus = 0.0;
+    
+    // Base bonus from development attribute
+    bonus += (coachingAttributes['development']! - 50) * 0.002;
+    
+    // Additional bonus if development is primary specialization
+    if (primarySpecialization == CoachingSpecialization.playerDevelopment) {
+      bonus += 0.1; // 10% additional bonus
+    }
+    
+    // Additional bonus if development is secondary specialization
+    if (secondarySpecialization == CoachingSpecialization.playerDevelopment) {
+      bonus += 0.05; // 5% additional bonus
+    }
+    
+    // Experience level bonus
+    bonus += (experienceLevel - 1) * 0.01;
+    
+    return bonus.clamp(0.0, 0.5); // Maximum 50% bonus
+  }
+
   @override
   Map<String, dynamic> toMap() {
     var baseMap = super.toMap();

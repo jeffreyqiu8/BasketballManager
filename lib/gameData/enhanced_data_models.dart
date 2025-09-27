@@ -457,18 +457,22 @@ class Playbook {
         (strategy) => strategy.name == (map['defensiveStrategy'] ?? 'manToMan'),
         orElse: () => DefensiveStrategy.manToMan,
       ),
-      strategyWeights: (map['strategyWeights'] as Map<String, dynamic>?)?.map(
-        (key, valueStr) => MapEntry(key, double.tryParse(valueStr.toString()) ?? 1.0)
-      ) ?? {},
+      strategyWeights: (map['strategyWeights'] is Map<String, dynamic>) 
+        ? (map['strategyWeights'] as Map<String, dynamic>).map(
+            (key, valueStr) => MapEntry(key, double.tryParse(valueStr.toString()) ?? 1.0)
+          )
+        : {},
       optimalRoles: (map['optimalRoles'] as List?)?.map(
         (roleStr) => PlayerRole.values.firstWhere(
           (role) => role.name == roleStr,
           orElse: () => PlayerRole.pointGuard,
         )
       ).toList() ?? [],
-      teamRequirements: (map['teamRequirements'] as Map<String, dynamic>?)?.map(
-        (key, valueStr) => MapEntry(key, double.tryParse(valueStr.toString()) ?? 0.0)
-      ) ?? {},
+      teamRequirements: (map['teamRequirements'] is Map<String, dynamic>)
+        ? (map['teamRequirements'] as Map<String, dynamic>).map(
+            (key, valueStr) => MapEntry(key, double.tryParse(valueStr.toString()) ?? 0.0)
+          )
+        : {},
       effectiveness: double.tryParse(map['effectiveness']?.toString() ?? '0.0') ?? 0.0,
     );
   }
@@ -818,6 +822,24 @@ class CoachingHistory {
   double get winPercentage {
     if (totalGames == 0) return 0.0;
     return totalWins / totalGames;
+  }
+
+  /// Add a season record
+  void addSeasonRecord(int wins, int losses, bool madePlayoffs, bool wonChampionship) {
+    seasonRecords.add(SeasonRecord(
+      wins: wins,
+      losses: losses,
+      madePlayoffs: madePlayoffs,
+      wonChampionship: wonChampionship,
+      season: seasonRecords.length + 1,
+    ));
+    
+    totalWins += wins;
+    totalLosses += losses;
+    totalGames += wins + losses;
+    
+    if (madePlayoffs) playoffAppearances++;
+    if (wonChampionship) championships++;
   }
 
   Map<String, dynamic> toMap() {

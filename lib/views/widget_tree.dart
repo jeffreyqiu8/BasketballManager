@@ -5,6 +5,7 @@ import 'package:BasketballManager/views/pages/home_page.dart';
 import 'package:BasketballManager/views/pages/match_history_page.dart';
 import 'package:BasketballManager/views/pages/profile_page.dart';
 import 'package:BasketballManager/views/pages/team_view_page.dart';
+import 'package:BasketballManager/views/pages/conference_standings_page.dart';
 import 'package:BasketballManager/views/widgets/navbar_widget.dart';
 
 
@@ -48,6 +49,18 @@ class WidgetTree extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => MatchHistoryPage(conference: game.currentConference),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            title: Text('Conference Standings'),
+            onTap: () {
+              // Navigate to ConferenceStandingsPage
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ConferenceStandingsPage(conference: game.currentConference),
                 ),
               );
             },

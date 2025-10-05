@@ -4,9 +4,6 @@ import 'package:BasketballManager/gameData/enhanced_coach.dart';
 import 'package:BasketballManager/gameData/development_service.dart';
 import 'package:BasketballManager/gameData/development_system.dart';
 import 'package:BasketballManager/gameData/enums.dart';
-import '../widgets/accessible_widgets.dart';
-import '../widgets/help_system.dart';
-import '../widgets/user_feedback_system.dart';
 
 class PlayerDevelopmentPage extends StatefulWidget {
   final EnhancedPlayer player;

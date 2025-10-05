@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:BasketballManager/views/pages/signup_page';
-import 'package:BasketballManager/views/pages/welcome_page.dart';
+import 'package:BasketballManager/views/pages/loading_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -31,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
         // On successful login, navigate to the Manager Profile Page
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => WelcomePage()),
+          MaterialPageRoute(builder: (context) => LoadingManagerProfilesPage()),
         );
       } on FirebaseAuthException catch (e) {
         // Handle error if login fails
@@ -98,25 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: const Text('Login'),
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  const Text('Don\'t have an account?'),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return SignUpPage();
-                          }
-                        )
-                      );
-                    },
-                    child: const Text('Sign Up'),
-                  ),
-                ],
-              ),
+
             ],
           ),
         ),

@@ -1,6 +1,5 @@
 import 'conference_class.dart';
 import 'team_class.dart';
-import 'enhanced_team.dart';
 import 'enhanced_coach.dart';
 import 'enhanced_game_simulation.dart';
 
@@ -221,7 +220,7 @@ class EnhancedConference extends Conference {
       _updateTeamStatistics(homeTeam.name, result['homeBoxScore'], true);
       _updateTeamStatistics(awayTeam.name, result['awayBoxScore'], false);
 
-      // Update individual player statistics
+      // Update individual player statistics (but not games played, which is handled in simulation)
       _updatePlayerStatistics(homeTeam, result['homeBoxScore'], matchday);
       _updatePlayerStatistics(awayTeam, result['awayBoxScore'], matchday);
 
@@ -240,6 +239,43 @@ class EnhancedConference extends Conference {
 
     // After playing the current matchday, increment the matchday
     matchday++;
+  }
+
+  /// Update individual player statistics based on game box score
+  void _updatePlayerStatistics(Team team, Map<String, Map<String, int>> boxScore, int matchday) {
+    for (final playerName in boxScore.keys) {
+      // Find the player in the team
+      final player = team.players.firstWhere(
+        (p) => p.name == playerName,
+        orElse: () => throw Exception('Player $playerName not found in team ${team.name}'),
+      );
+
+      final playerStats = boxScore[playerName]!;
+
+      // Only increment gamesPlayed if this matchday wasn't already recorded
+      // This handles the case where the same matchday is simulated multiple times
+      if (!player.performances.containsKey(matchday)) {
+        player.gamesPlayed++;
+      }
+
+      // Store individual game performance
+      player.performances[matchday] = {
+        'points': playerStats['points'] ?? 0,
+        'rebounds': playerStats['rebounds'] ?? 0,
+        'assists': playerStats['assists'] ?? 0,
+        'FGM': playerStats['FGM'] ?? 0,
+        'FGA': playerStats['FGA'] ?? 0,
+        '3PM': playerStats['3PM'] ?? 0,
+        '3PA': playerStats['3PA'] ?? 0,
+        'steals': playerStats['steals'] ?? 0,
+        'blocks': playerStats['blocks'] ?? 0,
+        'turnovers': playerStats['turnovers'] ?? 0,
+        'minutes': 25, // Default playing time - could be enhanced later
+      };
+
+      // Update season totals by recalculating from all performances
+      player.updateSeasonTotals();
+    }
   }
 
   /// Update team statistics based on game results
@@ -290,39 +326,7 @@ class EnhancedConference extends Conference {
     teamStatistics[teamName] = stats;
   }
 
-  /// Update individual player statistics based on game box score
-  void _updatePlayerStatistics(Team team, Map<String, Map<String, int>> boxScore, int matchday) {
-    for (final playerName in boxScore.keys) {
-      // Find the player in the team
-      final player = team.players.firstWhere(
-        (p) => p.name == playerName,
-        orElse: () => throw Exception('Player $playerName not found in team ${team.name}'),
-      );
 
-      final playerStats = boxScore[playerName]!;
-
-      // Update season totals
-      player.points += playerStats['points'] ?? 0;
-      player.rebounds += playerStats['rebounds'] ?? 0;
-      player.assists += playerStats['assists'] ?? 0;
-      player.gamesPlayed += 1;
-
-      // Store individual game performance
-      player.performances[matchday] = {
-        'points': playerStats['points'] ?? 0,
-        'rebounds': playerStats['rebounds'] ?? 0,
-        'assists': playerStats['assists'] ?? 0,
-        'FGM': playerStats['FGM'] ?? 0,
-        'FGA': playerStats['FGA'] ?? 0,
-        '3PM': playerStats['3PM'] ?? 0,
-        '3PA': playerStats['3PA'] ?? 0,
-        'steals': playerStats['steals'] ?? 0,
-        'blocks': playerStats['blocks'] ?? 0,
-        'turnovers': playerStats['turnovers'] ?? 0,
-        'minutes': 25, // Default playing time - could be enhanced later
-      };
-    }
-  }
 
   @override
   Map<String, dynamic> toMap() {

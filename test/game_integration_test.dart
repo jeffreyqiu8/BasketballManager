@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/gameData/enhanced_game_simulation.dart';
-import '../lib/gameData/enhanced_team.dart';
-import '../lib/gameData/enhanced_player.dart';
-import '../lib/gameData/enhanced_coach.dart';
-import '../lib/gameData/playbook.dart';
-import '../lib/gameData/development_system.dart';
-import '../lib/gameData/enums.dart';
-import '../lib/gameData/player_class.dart';
+import 'package:BasketballManager/gameData/enhanced_game_simulation.dart';
+import 'package:BasketballManager/gameData/enhanced_team.dart';
+import 'package:BasketballManager/gameData/enhanced_player.dart';
+import 'package:BasketballManager/gameData/enhanced_coach.dart';
+import 'package:BasketballManager/gameData/playbook.dart';
+import 'package:BasketballManager/gameData/development_system.dart';
+import 'package:BasketballManager/gameData/enums.dart';
+import 'package:BasketballManager/gameData/player_class.dart';
 
 void main() {
   group('Game Integration Tests', () {

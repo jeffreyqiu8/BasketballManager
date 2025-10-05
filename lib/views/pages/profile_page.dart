@@ -3,7 +3,7 @@ import 'package:BasketballManager/gameData/game_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:BasketballManager/data/notifiers.dart';
-import 'package:BasketballManager/views/pages/welcome_page.dart';
+import 'package:BasketballManager/views/pages/login_page.dart';
 
 
 class ProfilePage extends StatefulWidget {
@@ -46,7 +46,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => WelcomePage(),
+                    builder: (context) => LoginPage(),
                   ),
                 );
             }

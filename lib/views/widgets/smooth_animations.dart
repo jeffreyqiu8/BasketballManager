@@ -9,12 +9,12 @@ class SmoothFadeTransition extends StatefulWidget {
   final Curve curve;
 
   const SmoothFadeTransition({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 300),
     this.visible = true,
     this.curve = Curves.easeInOut,
-  }) : super(key: key);
+  });
 
   @override
   State<SmoothFadeTransition> createState() => _SmoothFadeTransitionState();
@@ -73,14 +73,14 @@ class SmoothSlideTransition extends StatefulWidget {
   final Curve curve;
 
   const SmoothSlideTransition({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 400),
     this.begin = const Offset(0.0, 1.0),
     this.end = Offset.zero,
     this.visible = true,
     this.curve = Curves.easeOutCubic,
-  }) : super(key: key);
+  });
 
   @override
   State<SmoothSlideTransition> createState() => _SmoothSlideTransitionState();
@@ -152,14 +152,14 @@ class SmoothScaleTransition extends StatefulWidget {
   final Curve curve;
 
   const SmoothScaleTransition({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 300),
     this.begin = 0.0,
     this.end = 1.0,
     this.visible = true,
     this.curve = Curves.elasticOut,
-  }) : super(key: key);
+  });
 
   @override
   State<SmoothScaleTransition> createState() => _SmoothScaleTransitionState();
@@ -220,13 +220,13 @@ class AnimatedCounter extends StatefulWidget {
   final String suffix;
 
   const AnimatedCounter({
-    Key? key,
+    super.key,
     required this.value,
     this.duration = const Duration(milliseconds: 800),
     this.textStyle,
     this.prefix = '',
     this.suffix = '',
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedCounter> createState() => _AnimatedCounterState();
@@ -296,14 +296,14 @@ class AnimatedProgressBar extends StatefulWidget {
   final BorderRadius? borderRadius;
 
   const AnimatedProgressBar({
-    Key? key,
+    super.key,
     required this.value,
     this.duration = const Duration(milliseconds: 600),
     this.backgroundColor,
     this.valueColor,
     this.height = 8.0,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedProgressBar> createState() => _AnimatedProgressBarState();
@@ -381,12 +381,12 @@ class StaggeredAnimationList extends StatefulWidget {
   final Curve curve;
 
   const StaggeredAnimationList({
-    Key? key,
+    super.key,
     required this.children,
     this.staggerDelay = const Duration(milliseconds: 100),
     this.itemDuration = const Duration(milliseconds: 400),
     this.curve = Curves.easeOutCubic,
-  }) : super(key: key);
+  });
 
   @override
   State<StaggeredAnimationList> createState() => _StaggeredAnimationListState();
@@ -469,13 +469,13 @@ class PulseAnimation extends StatefulWidget {
   final bool repeat;
 
   const PulseAnimation({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 1000),
     this.minScale = 0.95,
     this.maxScale = 1.05,
     this.repeat = true,
-  }) : super(key: key);
+  });
 
   @override
   State<PulseAnimation> createState() => _PulseAnimationState();
@@ -525,12 +525,12 @@ class ShimmerLoading extends StatefulWidget {
   final Duration duration;
 
   const ShimmerLoading({
-    Key? key,
+    super.key,
     required this.child,
     this.baseColor = const Color(0xFFE0E0E0),
     this.highlightColor = const Color(0xFFF5F5F5),
     this.duration = const Duration(milliseconds: 1500),
-  }) : super(key: key);
+  });
 
   @override
   State<ShimmerLoading> createState() => _ShimmerLoadingState();
@@ -594,12 +594,12 @@ class BounceAnimation extends StatefulWidget {
   final bool repeat;
 
   const BounceAnimation({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 800),
     this.bounceHeight = 20.0,
     this.repeat = true,
-  }) : super(key: key);
+  });
 
   @override
   State<BounceAnimation> createState() => _BounceAnimationState();

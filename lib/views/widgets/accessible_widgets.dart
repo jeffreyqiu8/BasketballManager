@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 
 /// Accessible card widget with proper semantics and keyboard navigation
 class AccessibleCard extends StatelessWidget {
@@ -13,7 +12,7 @@ class AccessibleCard extends StatelessWidget {
   final bool selected;
 
   const AccessibleCard({
-    Key? key,
+    super.key,
     required this.child,
     this.onTap,
     this.semanticLabel,
@@ -22,7 +21,7 @@ class AccessibleCard extends StatelessWidget {
     this.padding,
     this.elevation,
     this.selected = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +64,7 @@ class AccessibleButton extends StatelessWidget {
   final bool isLoading;
 
   const AccessibleButton({
-    Key? key,
+    super.key,
     required this.text,
     this.onPressed,
     this.icon,
@@ -74,7 +73,7 @@ class AccessibleButton extends StatelessWidget {
     this.semanticLabel,
     this.isDestructive = false,
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +136,7 @@ class AccessibleTextField extends StatelessWidget {
   final String? semanticLabel;
 
   const AccessibleTextField({
-    Key? key,
+    super.key,
     required this.label,
     this.hint,
     this.errorText,
@@ -148,7 +147,7 @@ class AccessibleTextField extends StatelessWidget {
     this.required = false,
     this.maxLines = 1,
     this.semanticLabel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +216,7 @@ class AccessibleDropdown<T> extends StatelessWidget {
   final String? semanticLabel;
 
   const AccessibleDropdown({
-    Key? key,
+    super.key,
     required this.label,
     this.value,
     required this.items,
@@ -225,7 +224,7 @@ class AccessibleDropdown<T> extends StatelessWidget {
     this.hint,
     this.required = false,
     this.semanticLabel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +283,7 @@ class AccessibleSlider extends StatelessWidget {
   final String? semanticLabel;
 
   const AccessibleSlider({
-    Key? key,
+    super.key,
     required this.label,
     required this.value,
     required this.min,
@@ -293,7 +292,7 @@ class AccessibleSlider extends StatelessWidget {
     this.onChanged,
     this.valueFormatter,
     this.semanticLabel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -344,13 +343,13 @@ class AccessibleProgressIndicator extends StatelessWidget {
   final Color? valueColor;
 
   const AccessibleProgressIndicator({
-    Key? key,
+    super.key,
     this.value,
     this.label,
     this.semanticLabel,
     this.backgroundColor,
     this.valueColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -401,12 +400,12 @@ class AccessibleTabBar extends StatelessWidget {
   final bool isScrollable;
 
   const AccessibleTabBar({
-    Key? key,
+    super.key,
     required this.tabs,
     this.controller,
     this.onTap,
     this.isScrollable = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -441,7 +440,7 @@ class AccessibleListTile extends StatelessWidget {
   final bool enabled;
 
   const AccessibleListTile({
-    Key? key,
+    super.key,
     this.leading,
     this.title,
     this.subtitle,
@@ -450,7 +449,7 @@ class AccessibleListTile extends StatelessWidget {
     this.semanticLabel,
     this.selected = false,
     this.enabled = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -483,14 +482,14 @@ class AccessibleIconButton extends StatelessWidget {
   final String? semanticLabel;
 
   const AccessibleIconButton({
-    Key? key,
+    super.key,
     required this.icon,
     this.onPressed,
     required this.tooltip,
     this.color,
     this.size,
     this.semanticLabel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -517,12 +516,12 @@ class AccessibleSwitch extends StatelessWidget {
   final String? semanticLabel;
 
   const AccessibleSwitch({
-    Key? key,
+    super.key,
     required this.value,
     this.onChanged,
     required this.label,
     this.semanticLabel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

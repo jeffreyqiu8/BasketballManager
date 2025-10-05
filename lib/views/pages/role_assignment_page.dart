@@ -3,7 +3,6 @@ import 'package:BasketballManager/gameData/enhanced_player.dart';
 import 'package:BasketballManager/gameData/enhanced_team.dart';
 import 'package:BasketballManager/gameData/role_manager.dart';
 import 'package:BasketballManager/gameData/enums.dart';
-import '../widgets/accessible_widgets.dart';
 import '../widgets/help_system.dart';
 import '../widgets/user_feedback_system.dart';
 
@@ -32,8 +31,10 @@ class _RoleAssignmentPageState extends State<RoleAssignmentPage> {
   void initState() {
     super.initState();
     _roleAssignments = Map.from(widget.team.roleAssignments);
-    _availablePlayers = widget.players.where((player) => 
-      !_roleAssignments.values.contains(player)).toList();
+    _availablePlayers =
+        widget.players
+            .where((player) => !_roleAssignments.values.contains(player))
+            .toList();
   }
 
   @override
@@ -79,14 +80,12 @@ class _RoleAssignmentPageState extends State<RoleAssignmentPage> {
               ],
             ),
           ),
-          
+
           // Lineup Validation Status
           _buildValidationStatus(),
-          
+
           // Tab Content
-          Expanded(
-            child: _buildTabContent(),
-          ),
+          Expanded(child: _buildTabContent()),
         ],
       ),
     );
@@ -94,7 +93,7 @@ class _RoleAssignmentPageState extends State<RoleAssignmentPage> {
 
   Widget _tabButton(String label, String value) {
     bool isSelected = _selectedTab == value;
-    
+
     return ElevatedButton(
       onPressed: () {
         setState(() {
@@ -102,9 +101,10 @@ class _RoleAssignmentPageState extends State<RoleAssignmentPage> {
         });
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected 
-          ? const Color.fromARGB(255, 82, 50, 168)
-          : const Color.fromARGB(255, 44, 44, 44),
+        backgroundColor:
+            isSelected
+                ? const Color.fromARGB(255, 82, 50, 168)
+                : const Color.fromARGB(255, 44, 44, 44),
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -116,14 +116,15 @@ class _RoleAssignmentPageState extends State<RoleAssignmentPage> {
   Widget _buildValidationStatus() {
     bool isValid = _isLineupValid();
     List<String> issues = _getLineupIssues();
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isValid 
-          ? Colors.green[400]?.withValues(alpha: 0.2)
-          : Colors.red[400]?.withValues(alpha: 0.2),
+        color:
+            isValid
+                ? Colors.green[400]?.withValues(alpha: 0.2)
+                : Colors.red[400]?.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isValid ? Colors.green[400]! : Colors.red[400]!,
@@ -140,9 +141,7 @@ class _RoleAssignmentPageState extends State<RoleAssignmentPage> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              isValid 
-                ? 'Lineup is valid and ready to play'
-                : issues.join(', '),
+              isValid ? 'Lineup is valid and ready to play' : issues.join(', '),
               style: TextStyle(
                 fontSize: 12,
                 color: isValid ? Colors.green[400] : Colors.red[400],
@@ -164,8 +163,9 @@ class _RoleAssignmentPageState extends State<RoleAssignmentPage> {
       default:
         return _buildLineupTab();
     }
-  }  
-Widget _buildLineupTab() {
+  }
+
+  Widget _buildLineupTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -174,7 +174,7 @@ Widget _buildLineupTab() {
           // Starting Lineup Card
           _buildStartingLineupCard(),
           const SizedBox(height: 16),
-          
+
           // Available Players Card
           _buildAvailablePlayersCard(),
         ],
@@ -208,7 +208,7 @@ Widget _buildLineupTab() {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Position Slots
           ...PlayerRole.values.map((role) {
             return Padding(
@@ -223,50 +223,54 @@ Widget _buildLineupTab() {
 
   Widget _buildPositionSlot(PlayerRole role) {
     EnhancedPlayer? assignedPlayer = _roleAssignments[role];
-    
+
     return DragTarget<EnhancedPlayer>(
-      onWillAccept: (player) => player != null,
-      onAccept: (player) {
+      onWillAcceptWithDetails: (player) => player != null,
+      onAcceptWithDetails: (details) {
+        final player = details.data;
         setState(() {
           // Remove player from previous assignment
           _roleAssignments.removeWhere((key, value) => value == player);
-          
+
           // If there was a player in this slot, move them to available
           if (assignedPlayer != null) {
             _availablePlayers.add(assignedPlayer!);
           }
-          
+
           // Assign new player to this role
           _roleAssignments[role] = player;
           _availablePlayers.remove(player);
-          
+
           // Update player's primary role
           player.assignPrimaryRole(role);
         });
       },
       builder: (context, candidateData, rejectedData) {
         bool isHighlighted = candidateData.isNotEmpty;
-        
+
         return Container(
           height: 80,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isHighlighted 
-              ? Colors.blue[400]?.withValues(alpha: 0.3)
-              : Colors.grey[800]?.withValues(alpha: 0.5),
+            color:
+                isHighlighted
+                    ? Colors.blue[400]?.withValues(alpha: 0.3)
+                    : Colors.grey[800]?.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: isHighlighted 
-                ? Colors.blue[400]! 
-                : assignedPlayer != null 
-                  ? _getRoleCompatibilityColor(assignedPlayer!, role)
-                  : Colors.grey[600]!,
+              color:
+                  isHighlighted
+                      ? Colors.blue[400]!
+                      : assignedPlayer != null
+                      ? _getRoleCompatibilityColor(assignedPlayer, role)
+                      : Colors.grey[600]!,
               width: 2,
             ),
           ),
-          child: assignedPlayer != null 
-            ? _buildAssignedPlayerTile(assignedPlayer!, role)
-            : _buildEmptySlot(role),
+          child:
+              assignedPlayer != null
+                  ? _buildAssignedPlayerTile(assignedPlayer, role)
+                  : _buildEmptySlot(role),
         );
       },
     );
@@ -275,7 +279,7 @@ Widget _buildLineupTab() {
   Widget _buildAssignedPlayerTile(EnhancedPlayer player, PlayerRole role) {
     double compatibility = player.calculateRoleCompatibility(role);
     Color compatibilityColor = _getRoleCompatibilityColor(player, role);
-    
+
     return Draggable<EnhancedPlayer>(
       data: player,
       feedback: Material(
@@ -334,10 +338,7 @@ Widget _buildLineupTab() {
         child: const Center(
           child: Text(
             'Dragging...',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 12),
           ),
         ),
       ),
@@ -372,7 +373,7 @@ Widget _buildLineupTab() {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Player Avatar
           CircleAvatar(
             radius: 20,
@@ -387,7 +388,7 @@ Widget _buildLineupTab() {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Player Info
           Expanded(
             child: Column(
@@ -404,15 +405,12 @@ Widget _buildLineupTab() {
                 ),
                 Text(
                   'Age ${player.age} • OVR ${_calculateOverallRating(player).toStringAsFixed(0)}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[400],
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[400]),
                 ),
               ],
             ),
           ),
-          
+
           // Compatibility Indicator
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -434,10 +432,7 @@ Widget _buildLineupTab() {
               ),
               Text(
                 _getCompatibilityLabel(compatibility),
-                style: TextStyle(
-                  fontSize: 8,
-                  color: Colors.grey[400],
-                ),
+                style: TextStyle(fontSize: 8, color: Colors.grey[400]),
               ),
             ],
           ),
@@ -466,7 +461,7 @@ Widget _buildLineupTab() {
           ),
         ),
         const SizedBox(width: 12),
-        
+
         // Empty Slot Indicator
         Expanded(
           child: Column(
@@ -483,15 +478,12 @@ Widget _buildLineupTab() {
               ),
               Text(
                 'Drag a player here',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
               ),
             ],
           ),
         ),
-        
+
         // Add Button
         IconButton(
           onPressed: () => _showPlayerSelectionDialog(role),
@@ -535,40 +527,27 @@ Widget _buildLineupTab() {
               const Spacer(),
               Text(
                 '${_availablePlayers.length} players',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[400],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[400]),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          
+
           if (_availablePlayers.isEmpty)
             Container(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.group_off,
-                    size: 48,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.group_off, size: 48, color: Colors.grey[600]),
                   const SizedBox(height: 8),
                   Text(
                     'All players assigned',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[400],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey[400]),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Your starting lineup is complete',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                   ),
                 ],
               ),
@@ -580,16 +559,13 @@ Widget _buildLineupTab() {
                 child: _buildAvailablePlayerTile(player),
               );
             })),
-          
+
           if (_availablePlayers.length > 10)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 'Showing 10 of ${_availablePlayers.length} players',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
             ),
         ],
@@ -600,7 +576,7 @@ Widget _buildLineupTab() {
   Widget _buildAvailablePlayerTile(EnhancedPlayer player) {
     PlayerRole bestRole = player.getBestRole();
     double bestCompatibility = player.calculateRoleCompatibility(bestRole);
-    
+
     return Draggable<EnhancedPlayer>(
       data: player,
       feedback: Material(
@@ -659,10 +635,7 @@ Widget _buildLineupTab() {
         child: const Center(
           child: Text(
             'Dragging...',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.grey, fontSize: 12),
           ),
         ),
       ),
@@ -688,7 +661,7 @@ Widget _buildLineupTab() {
               ),
             ),
             const SizedBox(width: 12),
-            
+
             // Player Info
             Expanded(
               child: Column(
@@ -704,20 +677,20 @@ Widget _buildLineupTab() {
                   ),
                   Text(
                     'Age ${player.age} • OVR ${_calculateOverallRating(player).toStringAsFixed(0)}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[400],
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[400]),
                   ),
                 ],
               ),
             ),
-            
+
             // Best Position
             Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: _getRoleColor(bestRole),
                     borderRadius: BorderRadius.circular(6),
@@ -733,10 +706,7 @@ Widget _buildLineupTab() {
                 ),
                 Text(
                   '${(bestCompatibility * 100).toStringAsFixed(0)}%',
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: Colors.grey[400],
-                  ),
+                  style: TextStyle(fontSize: 8, color: Colors.grey[400]),
                 ),
               ],
             ),
@@ -744,8 +714,9 @@ Widget _buildLineupTab() {
         ),
       ),
     );
-  } 
- Widget _buildRolesTab() {
+  }
+
+  Widget _buildRolesTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -754,7 +725,7 @@ Widget _buildLineupTab() {
           // Role Compatibility Overview
           _buildRoleCompatibilityCard(),
           const SizedBox(height: 16),
-          
+
           // Individual Player Roles
           _buildPlayerRolesCard(),
         ],
@@ -788,7 +759,7 @@ Widget _buildLineupTab() {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Matrix Header
           Row(
             children: [
@@ -810,7 +781,7 @@ Widget _buildLineupTab() {
             ],
           ),
           const SizedBox(height: 8),
-          
+
           // Matrix Rows
           ...widget.players.take(8).map((player) {
             return Padding(
@@ -821,21 +792,20 @@ Widget _buildLineupTab() {
                   SizedBox(
                     width: 100,
                     child: Text(
-                      player.name.length > 12 
-                        ? '${player.name.substring(0, 12)}...'
-                        : player.name,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                      ),
+                      player.name.length > 12
+                          ? '${player.name.substring(0, 12)}...'
+                          : player.name,
+                      style: const TextStyle(fontSize: 11, color: Colors.white),
                     ),
                   ),
-                  
+
                   // Compatibility Cells
                   ...PlayerRole.values.map((role) {
-                    double compatibility = player.calculateRoleCompatibility(role);
+                    double compatibility = player.calculateRoleCompatibility(
+                      role,
+                    );
                     Color cellColor = _getRoleCompatibilityColor(player, role);
-                    
+
                     return Expanded(
                       child: Container(
                         height: 24,
@@ -843,14 +813,11 @@ Widget _buildLineupTab() {
                         decoration: BoxDecoration(
                           color: cellColor.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: cellColor,
-                            width: 1,
-                          ),
+                          border: Border.all(color: cellColor, width: 1),
                         ),
                         child: Center(
                           child: Text(
-                            '${(compatibility * 100).toStringAsFixed(0)}',
+                            (compatibility * 100).toStringAsFixed(0),
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
@@ -865,16 +832,13 @@ Widget _buildLineupTab() {
               ),
             );
           }),
-          
+
           if (widget.players.length > 8)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 'Showing top 8 players',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
             ),
         ],
@@ -908,7 +872,7 @@ Widget _buildLineupTab() {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           ...widget.players.map((player) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -924,15 +888,16 @@ Widget _buildLineupTab() {
     PlayerRole currentRole = player.primaryRole;
     PlayerRole bestRole = player.getBestRole();
     bool isInStartingLineup = _roleAssignments.values.contains(player);
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey[800]?.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: isInStartingLineup 
-          ? Border.all(color: Colors.blue[400]!, width: 1)
-          : null,
+        border:
+            isInStartingLineup
+                ? Border.all(color: Colors.blue[400]!, width: 1)
+                : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -953,7 +918,7 @@ Widget _buildLineupTab() {
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -968,15 +933,12 @@ Widget _buildLineupTab() {
                     ),
                     Text(
                       'OVR ${_calculateOverallRating(player).toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[400],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[400]),
                     ),
                   ],
                 ),
               ),
-              
+
               // Current Role
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -993,11 +955,14 @@ Widget _buildLineupTab() {
                   ),
                 ),
               ),
-              
+
               if (isInStartingLineup) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue[400],
                     borderRadius: BorderRadius.circular(8),
@@ -1015,52 +980,58 @@ Widget _buildLineupTab() {
             ],
           ),
           const SizedBox(height: 8),
-          
+
           // Role Compatibility Bars
           Row(
-            children: PlayerRole.values.map((role) {
-              double compatibility = player.calculateRoleCompatibility(role);
-              Color roleColor = _getRoleColor(role);
-              bool isBestRole = role == bestRole;
-              
-              return Expanded(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 1),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[700],
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.bottomCenter,
-                          heightFactor: compatibility,
-                          child: Container(
+            children:
+                PlayerRole.values.map((role) {
+                  double compatibility = player.calculateRoleCompatibility(
+                    role,
+                  );
+                  Color roleColor = _getRoleColor(role);
+                  bool isBestRole = role == bestRole;
+
+                  return Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 20,
                             decoration: BoxDecoration(
-                              color: roleColor,
+                              color: Colors.grey[700],
                               borderRadius: BorderRadius.circular(2),
                             ),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.bottomCenter,
+                              heightFactor: compatibility,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: roleColor,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 2),
+                          Text(
+                            role.abbreviation,
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight:
+                                  isBestRole
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                              color: isBestRole ? roleColor : Colors.grey[500],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        role.abbreviation,
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: isBestRole ? FontWeight.bold : FontWeight.normal,
-                          color: isBestRole ? roleColor : Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+                    ),
+                  );
+                }).toList(),
           ),
-          
+
           if (currentRole != bestRole) ...[
             const SizedBox(height: 8),
             Container(
@@ -1080,10 +1051,7 @@ Widget _buildLineupTab() {
                   const SizedBox(width: 4),
                   Text(
                     'Better suited for ${bestRole.displayName}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.orange[400],
-                    ),
+                    style: TextStyle(fontSize: 10, color: Colors.orange[400]),
                   ),
                 ],
               ),
@@ -1103,11 +1071,11 @@ Widget _buildLineupTab() {
           // Lineup Analysis Card
           _buildLineupAnalysisCard(),
           const SizedBox(height: 16),
-          
+
           // Optimization Suggestions Card
           _buildOptimizationSuggestionsCard(),
           const SizedBox(height: 16),
-          
+
           // Performance Prediction Card
           _buildPerformancePredictionCard(),
         ],
@@ -1119,7 +1087,7 @@ Widget _buildLineupTab() {
     double averageCompatibility = _calculateAverageCompatibility();
     List<String> strengths = _getLineupStrengths();
     List<String> weaknesses = _getLineupWeaknesses();
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1145,7 +1113,7 @@ Widget _buildLineupTab() {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Overall Rating
           Row(
             children: [
@@ -1155,10 +1123,7 @@ Widget _buildLineupTab() {
                   children: [
                     Text(
                       'Overall Compatibility',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[300],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[300]),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1166,7 +1131,9 @@ Widget _buildLineupTab() {
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: _getCompatibilityRatingColor(averageCompatibility),
+                        color: _getCompatibilityRatingColor(
+                          averageCompatibility,
+                        ),
                       ),
                     ),
                   ],
@@ -1183,7 +1150,7 @@ Widget _buildLineupTab() {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Strengths and Weaknesses
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1278,7 +1245,7 @@ Widget _buildLineupTab() {
 
   Widget _buildOptimizationSuggestionsCard() {
     List<String> suggestions = _getOptimizationSuggestions();
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1297,11 +1264,7 @@ Widget _buildLineupTab() {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.lightbulb,
-                color: Colors.amber[400],
-                size: 20,
-              ),
+              Icon(Icons.lightbulb, color: Colors.amber[400], size: 20),
               const SizedBox(width: 8),
               const Text(
                 'Optimization Suggestions',
@@ -1314,32 +1277,22 @@ Widget _buildLineupTab() {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           if (suggestions.isEmpty)
             Container(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.thumb_up,
-                    size: 32,
-                    color: Colors.green[400],
-                  ),
+                  Icon(Icons.thumb_up, size: 32, color: Colors.green[400]),
                   const SizedBox(height: 8),
                   Text(
                     'Lineup looks great!',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.green[400],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.green[400]),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'No immediate optimizations needed',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[400],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                   ),
                 ],
               ),
@@ -1357,15 +1310,12 @@ Widget _buildLineupTab() {
                   ),
                   child: Text(
                     suggestion,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[300],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[300]),
                   ),
                 ),
               );
             }),
-          
+
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -1381,10 +1331,7 @@ Widget _buildLineupTab() {
               ),
               child: const Text(
                 'Auto-Optimize Lineup',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1395,7 +1342,7 @@ Widget _buildLineupTab() {
 
   Widget _buildPerformancePredictionCard() {
     Map<String, double> predictions = _calculatePerformancePredictions();
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1421,7 +1368,7 @@ Widget _buildLineupTab() {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           ...predictions.entries.map((entry) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -1435,7 +1382,7 @@ Widget _buildLineupTab() {
 
   Widget _buildPredictionItem(String category, double rating) {
     Color ratingColor = _getPerformanceRatingColor(rating);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1444,10 +1391,7 @@ Widget _buildLineupTab() {
           children: [
             Text(
               category,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white,
-              ),
+              style: const TextStyle(fontSize: 14, color: Colors.white),
             ),
             Text(
               rating.toStringAsFixed(1),
@@ -1500,7 +1444,7 @@ Widget _buildLineupTab() {
               itemBuilder: (context, index) {
                 EnhancedPlayer player = _availablePlayers[index];
                 double compatibility = player.calculateRoleCompatibility(role);
-                
+
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: _getRoleCompatibilityColor(player, role),
@@ -1554,25 +1498,29 @@ Widget _buildLineupTab() {
   void _optimizeLineup() {
     setState(() {
       // Reset all assignments
-      _availablePlayers.addAll(_roleAssignments.values.whereType<EnhancedPlayer>());
+      _availablePlayers.addAll(
+        _roleAssignments.values.whereType<EnhancedPlayer>(),
+      );
       _roleAssignments.clear();
-      
+
       // Get optimal assignments using RoleManager
       List<EnhancedPlayer> topPlayers = _availablePlayers.take(5).toList();
       if (topPlayers.length == 5) {
-        List<PlayerRole> optimalRoles = RoleManager.getOptimalLineup(topPlayers);
-        
+        List<PlayerRole> optimalRoles = RoleManager.getOptimalLineup(
+          topPlayers,
+        );
+
         for (int i = 0; i < 5; i++) {
           PlayerRole role = optimalRoles[i];
           EnhancedPlayer player = topPlayers[i];
-          
+
           _roleAssignments[role] = player;
           player.assignPrimaryRole(role);
           _availablePlayers.remove(player);
         }
       }
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Lineup optimized based on player compatibility'),
@@ -1586,7 +1534,7 @@ Widget _buildLineupTab() {
     if (_isLineupValid()) {
       // Update team's role assignments
       widget.team.roleAssignments = Map.from(_roleAssignments);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Lineup saved successfully'),
@@ -1594,7 +1542,7 @@ Widget _buildLineupTab() {
           duration: const Duration(seconds: 2),
         ),
       );
-      
+
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1613,24 +1561,25 @@ Widget _buildLineupTab() {
 
   List<String> _getLineupIssues() {
     List<String> issues = [];
-    
+
     for (PlayerRole role in PlayerRole.values) {
       if (_roleAssignments[role] == null) {
         issues.add('${role.displayName} position not filled');
       }
     }
-    
+
     return issues;
   }
 
   double _calculateOverallRating(EnhancedPlayer player) {
-    return (player.shooting + 
-            player.rebounding + 
-            player.passing + 
-            player.ballHandling + 
-            player.perimeterDefense + 
-            player.postDefense + 
-            player.insideShooting) / 7.0;
+    return (player.shooting +
+            player.rebounding +
+            player.passing +
+            player.ballHandling +
+            player.perimeterDefense +
+            player.postDefense +
+            player.insideShooting) /
+        7.0;
   }
 
   Color _getRoleColor(PlayerRole role) {
@@ -1650,7 +1599,7 @@ Widget _buildLineupTab() {
 
   Color _getRoleCompatibilityColor(EnhancedPlayer player, PlayerRole role) {
     double compatibility = player.calculateRoleCompatibility(role);
-    
+
     if (compatibility >= 0.9) return Colors.green[400]!;
     if (compatibility >= 0.8) return Colors.lightGreen[400]!;
     if (compatibility >= 0.7) return Colors.yellow[400]!;
@@ -1668,17 +1617,19 @@ Widget _buildLineupTab() {
 
   double _calculateAverageCompatibility() {
     if (_roleAssignments.isEmpty) return 0.0;
-    
+
     double totalCompatibility = 0.0;
     int count = 0;
-    
+
     for (var entry in _roleAssignments.entries) {
       if (entry.value != null) {
-        totalCompatibility += entry.value!.calculateRoleCompatibility(entry.key);
+        totalCompatibility += entry.value!.calculateRoleCompatibility(
+          entry.key,
+        );
         count++;
       }
     }
-    
+
     return count > 0 ? totalCompatibility / count : 0.0;
   }
 
@@ -1692,25 +1643,27 @@ Widget _buildLineupTab() {
 
   List<String> _getLineupStrengths() {
     List<String> strengths = [];
-    
+
     // Check for high compatibility players
     int excellentFits = 0;
     for (var entry in _roleAssignments.entries) {
       if (entry.value != null) {
-        double compatibility = entry.value!.calculateRoleCompatibility(entry.key);
+        double compatibility = entry.value!.calculateRoleCompatibility(
+          entry.key,
+        );
         if (compatibility >= 0.9) excellentFits++;
       }
     }
-    
+
     if (excellentFits >= 3) {
       strengths.add('Strong role compatibility across lineup');
     }
-    
+
     // Check for balanced skills
     if (_roleAssignments.isNotEmpty) {
       double avgShooting = _getAverageSkill('shooting');
       double avgDefense = _getAverageSkill('defense');
-      
+
       if (avgShooting >= 75) {
         strengths.add('Strong offensive capabilities');
       }
@@ -1718,31 +1671,33 @@ Widget _buildLineupTab() {
         strengths.add('Solid defensive foundation');
       }
     }
-    
+
     return strengths;
   }
 
   List<String> _getLineupWeaknesses() {
     List<String> weaknesses = [];
-    
+
     // Check for poor compatibility
     int poorFits = 0;
     for (var entry in _roleAssignments.entries) {
       if (entry.value != null) {
-        double compatibility = entry.value!.calculateRoleCompatibility(entry.key);
+        double compatibility = entry.value!.calculateRoleCompatibility(
+          entry.key,
+        );
         if (compatibility < 0.7) poorFits++;
       }
     }
-    
+
     if (poorFits >= 2) {
       weaknesses.add('Multiple players out of position');
     }
-    
+
     // Check for skill gaps
     if (_roleAssignments.isNotEmpty) {
       double avgShooting = _getAverageSkill('shooting');
       double avgDefense = _getAverageSkill('defense');
-      
+
       if (avgShooting < 65) {
         weaknesses.add('Limited offensive firepower');
       }
@@ -1750,17 +1705,16 @@ Widget _buildLineupTab() {
         weaknesses.add('Defensive vulnerabilities');
       }
     }
-    
+
     return weaknesses;
   }
 
   double _getAverageSkill(String skillCategory) {
-    List<EnhancedPlayer> assignedPlayers = _roleAssignments.values
-        .whereType<EnhancedPlayer>()
-        .toList();
-    
+    List<EnhancedPlayer> assignedPlayers =
+        _roleAssignments.values.whereType<EnhancedPlayer>().toList();
+
     if (assignedPlayers.isEmpty) return 0.0;
-    
+
     double total = 0.0;
     for (EnhancedPlayer player in assignedPlayers) {
       switch (skillCategory) {
@@ -1772,45 +1726,47 @@ Widget _buildLineupTab() {
           break;
       }
     }
-    
+
     return total / assignedPlayers.length;
   }
 
   List<String> _getOptimizationSuggestions() {
     List<String> suggestions = [];
-    
+
     // Check each position for better alternatives
     for (var entry in _roleAssignments.entries) {
       PlayerRole role = entry.key;
       EnhancedPlayer? currentPlayer = entry.value;
-      
+
       if (currentPlayer != null) {
-        double currentCompatibility = currentPlayer.calculateRoleCompatibility(role);
-        
+        double currentCompatibility = currentPlayer.calculateRoleCompatibility(
+          role,
+        );
+
         // Look for better alternatives in available players
         for (EnhancedPlayer availablePlayer in _availablePlayers) {
-          double availableCompatibility = availablePlayer.calculateRoleCompatibility(role);
-          
+          double availableCompatibility = availablePlayer
+              .calculateRoleCompatibility(role);
+
           if (availableCompatibility > currentCompatibility + 0.1) {
             suggestions.add(
               'Consider ${availablePlayer.name} for ${role.displayName} '
               '(${(availableCompatibility * 100).toStringAsFixed(0)}% vs '
-              '${(currentCompatibility * 100).toStringAsFixed(0)}%)'
+              '${(currentCompatibility * 100).toStringAsFixed(0)}%)',
             );
             break; // Only suggest one alternative per position
           }
         }
       }
     }
-    
+
     return suggestions.take(3).toList(); // Limit to 3 suggestions
   }
 
   Map<String, double> _calculatePerformancePredictions() {
-    List<EnhancedPlayer> assignedPlayers = _roleAssignments.values
-        .whereType<EnhancedPlayer>()
-        .toList();
-    
+    List<EnhancedPlayer> assignedPlayers =
+        _roleAssignments.values.whereType<EnhancedPlayer>().toList();
+
     if (assignedPlayers.isEmpty) {
       return {
         'Offensive Rating': 0.0,
@@ -1819,12 +1775,13 @@ Widget _buildLineupTab() {
         'Overall Performance': 0.0,
       };
     }
-    
+
     double offensiveRating = _getAverageSkill('shooting');
     double defensiveRating = _getAverageSkill('defense');
     double teamChemistry = _calculateAverageCompatibility() * 100;
-    double overallPerformance = (offensiveRating + defensiveRating + teamChemistry) / 3.0;
-    
+    double overallPerformance =
+        (offensiveRating + defensiveRating + teamChemistry) / 3.0;
+
     return {
       'Offensive Rating': offensiveRating,
       'Defensive Rating': defensiveRating,

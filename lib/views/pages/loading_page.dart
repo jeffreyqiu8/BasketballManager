@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:BasketballManager/gameData/game_class.dart';
-import 'package:BasketballManager/views/pages/welcome_page.dart';
 import 'package:BasketballManager/views/widget_tree.dart';
 
 class LoadingManagerProfilesPage extends StatefulWidget {
@@ -58,14 +57,7 @@ class _LoadingManagerProfilesPageState extends State<LoadingManagerProfilesPage>
         title: const Text('Game Profiles'),
         leading: IconButton(
             onPressed: () {
-              Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return WelcomePage();
-                    }
-                  )
-                );
+              Navigator.pop(context);
             },
             icon:Icon(Icons.arrow_back),
           ),

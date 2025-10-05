@@ -3,9 +3,6 @@ import 'package:BasketballManager/gameData/conference_class.dart';
 import 'package:BasketballManager/gameData/enhanced_conference.dart';
 import 'package:BasketballManager/gameData/team_class.dart';
 import 'package:BasketballManager/views/pages/team_profile_page.dart';
-import '../widgets/accessible_widgets.dart';
-import '../widgets/help_system.dart';
-import '../widgets/user_feedback_system.dart';
 
 class EnhancedSchedulePage extends StatefulWidget {
   final Conference conference;
@@ -59,16 +56,7 @@ class _EnhancedSchedulePageState extends State<EnhancedSchedulePage> {
     return enhanced;
   }
 
-  List<Map<String, dynamic>> get _filteredSchedule {
-    if (_selectedTeam != null) {
-      return _enhancedConference.schedule
-          .where((game) => 
-              game['home'] == _selectedTeam || 
-              game['away'] == _selectedTeam)
-          .toList();
-    }
-    return _enhancedConference.schedule;
-  }
+
 
   List<Map<String, dynamic>> get _upcomingGames {
     return _enhancedConference.schedule

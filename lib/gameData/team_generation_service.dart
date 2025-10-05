@@ -674,14 +674,7 @@ class TeamGenerationService {
     return true;
   }
 
-  /// Calculate total team salary
-  static double _calculateTotalSalary(List<EnhancedPlayer> roster, Map<EnhancedPlayer, double> salaries) {
-    double total = 0.0;
-    for (EnhancedPlayer player in roster) {
-      total += salaries[player] ?? minimumSalary;
-    }
-    return total;
-  }
+
 
   /// Generate salary distribution that fits under cap
   static Map<EnhancedPlayer, double> _generateSalaryDistribution(

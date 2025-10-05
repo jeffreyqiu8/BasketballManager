@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/gameData/performance_optimizer.dart';
-import '../lib/gameData/performance_profiler.dart';
-import '../lib/gameData/memory_manager.dart';
-import '../lib/gameData/enhanced_player.dart';
-import '../lib/gameData/enhanced_team.dart';
-import '../lib/gameData/playbook.dart';
-import '../lib/gameData/enums.dart';
-import '../lib/gameData/development_system.dart';
+import 'package:BasketballManager/gameData/performance_optimizer.dart';
+import 'package:BasketballManager/gameData/performance_profiler.dart';
+import 'package:BasketballManager/gameData/memory_manager.dart';
+import 'package:BasketballManager/gameData/enhanced_player.dart';
+import 'package:BasketballManager/gameData/enhanced_team.dart';
+import 'package:BasketballManager/gameData/playbook.dart';
+import 'package:BasketballManager/gameData/enums.dart';
+import 'package:BasketballManager/gameData/development_system.dart';
 
 void main() {
   group('Performance Optimization Tests', () {

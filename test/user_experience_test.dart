@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/views/widgets/accessible_widgets.dart';
-import '../lib/views/widgets/help_system.dart';
-import '../lib/views/widgets/smooth_animations.dart';
-import '../lib/views/widgets/user_feedback_system.dart';
-import '../lib/views/widgets/lazy_loading_widget.dart';
+import 'package:BasketballManager/views/widgets/accessible_widgets.dart';
+import 'package:BasketballManager/views/widgets/help_system.dart';
+import 'package:BasketballManager/views/widgets/smooth_animations.dart';
+import 'package:BasketballManager/views/widgets/user_feedback_system.dart';
+import 'package:BasketballManager/views/widgets/lazy_loading_widget.dart';
 
 void main() {
   group('User Experience Tests', () {
@@ -288,12 +288,12 @@ void main() {
           MaterialApp(
             home: Scaffold(
               body: StaggeredAnimationList(
+                staggerDelay: Duration(milliseconds: 50),
                 children: [
                   Text('Item 1'),
                   Text('Item 2'),
                   Text('Item 3'),
                 ],
-                staggerDelay: Duration(milliseconds: 50),
               ),
             ),
           ),

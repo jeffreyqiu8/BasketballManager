@@ -11,14 +11,14 @@ class LazyLoadingWidget<T> extends StatefulWidget {
   final Duration? debounceDelay;
 
   const LazyLoadingWidget({
-    Key? key,
+    super.key,
     required this.loader,
     required this.builder,
     this.loadingBuilder,
     this.errorBuilder,
     this.loadOnInit = false,
     this.debounceDelay,
-  }) : super(key: key);
+  });
 
   @override
   State<LazyLoadingWidget<T>> createState() => _LazyLoadingWidgetState<T>();
@@ -90,7 +90,7 @@ class _LazyLoadingWidgetState<T> extends State<LazyLoadingWidget<T>> {
     }
 
     if (_data != null) {
-      return widget.builder(context, _data!);
+      return widget.builder(context, _data as T);
     }
 
     // Show load trigger if not loading on init
@@ -111,7 +111,7 @@ class LazyLoadingListView<T> extends StatefulWidget {
   final ScrollController? controller;
 
   const LazyLoadingListView({
-    Key? key,
+    super.key,
     required this.loader,
     required this.itemBuilder,
     this.pageSize = 20,
@@ -119,7 +119,7 @@ class LazyLoadingListView<T> extends StatefulWidget {
     this.errorBuilder,
     this.emptyBuilder,
     this.controller,
-  }) : super(key: key);
+  });
 
   @override
   State<LazyLoadingListView<T>> createState() => _LazyLoadingListViewState<T>();
@@ -246,7 +246,7 @@ class LazyLoadingGridView<T> extends StatefulWidget {
   final Widget Function(BuildContext context, Object error)? errorBuilder;
 
   const LazyLoadingGridView({
-    Key? key,
+    super.key,
     required this.loader,
     required this.itemBuilder,
     required this.crossAxisCount,
@@ -254,7 +254,7 @@ class LazyLoadingGridView<T> extends StatefulWidget {
     this.childAspectRatio = 1.0,
     this.loadingBuilder,
     this.errorBuilder,
-  }) : super(key: key);
+  });
 
   @override
   State<LazyLoadingGridView<T>> createState() => _LazyLoadingGridViewState<T>();

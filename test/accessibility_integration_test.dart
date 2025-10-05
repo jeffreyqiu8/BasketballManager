@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/main_accessibility.dart';
-import '../lib/views/pages/accessibility_initializer.dart';
-import '../lib/views/widgets/accessible_widgets.dart';
-import '../lib/views/widgets/help_system.dart';
-import '../lib/views/widgets/user_feedback_system.dart';
+import 'package:BasketballManager/main_accessibility.dart';
+import 'package:BasketballManager/views/widgets/accessible_widgets.dart';
+import 'package:BasketballManager/views/widgets/help_system.dart';
+import 'package:BasketballManager/views/widgets/user_feedback_system.dart';
 
 void main() {
   group('Accessibility Integration Tests', () {

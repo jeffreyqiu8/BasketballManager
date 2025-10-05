@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 /// Help system for providing contextual assistance and tutorials
 class HelpSystem {
@@ -282,7 +281,7 @@ class TutorialStep {
 class HelpDialog extends StatelessWidget {
   final HelpContent content;
 
-  const HelpDialog({Key? key, required this.content}) : super(key: key);
+  const HelpDialog({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {
@@ -373,7 +372,7 @@ class HelpDialog extends StatelessWidget {
 class TutorialScreen extends StatefulWidget {
   final Tutorial tutorial;
 
-  const TutorialScreen({Key? key, required this.tutorial}) : super(key: key);
+  const TutorialScreen({super.key, required this.tutorial});
 
   @override
   State<TutorialScreen> createState() => _TutorialScreenState();
@@ -531,11 +530,11 @@ class HelpButton extends StatelessWidget {
   final String tooltip;
 
   const HelpButton({
-    Key? key,
+    super.key,
     required this.contextId,
     this.icon = Icons.help_outline,
     this.tooltip = 'Get help',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -553,10 +552,10 @@ class TutorialLauncher extends StatelessWidget {
   final Widget child;
 
   const TutorialLauncher({
-    Key? key,
+    super.key,
     required this.tutorialId,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

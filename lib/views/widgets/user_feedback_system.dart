@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 /// User feedback system for collecting user input and testing
 class UserFeedbackSystem {
@@ -230,7 +229,7 @@ class UsabilityTask {
 class FeedbackDialog extends StatefulWidget {
   final String? feature;
 
-  const FeedbackDialog({Key? key, this.feature}) : super(key: key);
+  const FeedbackDialog({super.key, this.feature});
 
   @override
   State<FeedbackDialog> createState() => _FeedbackDialogState();
@@ -395,7 +394,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
 class QuickRatingDialog extends StatelessWidget {
   final String feature;
 
-  const QuickRatingDialog({Key? key, required this.feature}) : super(key: key);
+  const QuickRatingDialog({super.key, required this.feature});
 
   void _submitRating(BuildContext context, int rating) {
     final feedback = FeedbackEntry(
@@ -465,7 +464,7 @@ class QuickRatingDialog extends StatelessWidget {
 class UsabilityTestScreen extends StatefulWidget {
   final UsabilityTest test;
 
-  const UsabilityTestScreen({Key? key, required this.test}) : super(key: key);
+  const UsabilityTestScreen({super.key, required this.test});
 
   @override
   State<UsabilityTestScreen> createState() => _UsabilityTestScreenState();
@@ -619,11 +618,11 @@ class FeedbackButton extends StatelessWidget {
   final String tooltip;
 
   const FeedbackButton({
-    Key? key,
+    super.key,
     this.feature,
     this.icon = Icons.feedback_outlined,
     this.tooltip = 'Give feedback',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

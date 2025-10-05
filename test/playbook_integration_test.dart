@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:BasketballManager/gameData/playbook.dart';
-import 'package:BasketballManager/gameData/enums.dart';
 
 void main() {
   group('Playbook Integration Tests', () {

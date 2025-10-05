@@ -5,7 +5,6 @@ import 'team_class.dart';
 import 'enhanced_team.dart';
 import 'enhanced_coach.dart';
 import 'enums.dart';
-import 'role_manager.dart';
 import 'playbook.dart';
 import 'coaching_service.dart';
 import 'development_service.dart';
@@ -313,24 +312,6 @@ class EnhancedGameSimulation {
     paceModifier = (paceModifier / 2.0).clamp(0.8, 1.3);
 
     return (basePossessions * paceModifier).round();
-  }
-
-  /// Get optimal starting lineup with role assignments
-  static List<EnhancedPlayer> _getStartingLineup(List<EnhancedPlayer> players) {
-    if (players.length < 5) {
-      throw ArgumentError('Team must have at least 5 players');
-    }
-
-    // Take first 5 players and assign optimal roles
-    final starters = players.take(5).toList();
-    final optimalRoles = RoleManager.getOptimalLineup(starters);
-
-    // Assign roles to starters
-    for (int i = 0; i < starters.length; i++) {
-      starters[i].assignPrimaryRole(optimalRoles[i]);
-    }
-
-    return starters;
   }
 
   /// Simulate a single possession with role-based logic, playbook effects, and coaching bonuses
@@ -1214,32 +1195,6 @@ class EnhancedGameSimulation {
     // This is a simplified check - in a real implementation,
     // we'd track skill changes during the game
     return player.development.totalExperience > 0;
-  }
-
-  /// Add comprehensive logging for debugging complex interactions
-  static void _logGameSimulationDetails(
-    String event,
-    Map<String, dynamic> details,
-  ) {
-    if (const bool.fromEnvironment(
-      'DEBUG_GAME_SIMULATION',
-      defaultValue: false,
-    )) {
-      print('GAME_SIM: $event - ${details.toString()}');
-    }
-  }
-
-  /// Monitor performance to ensure simulation remains responsive
-  static void _monitorPerformance(String operation, Function() operation_func) {
-    final stopwatch = Stopwatch()..start();
-    operation_func();
-    stopwatch.stop();
-
-    if (stopwatch.elapsedMilliseconds > 100) {
-      print(
-        'PERFORMANCE WARNING: $operation took ${stopwatch.elapsedMilliseconds}ms',
-      );
-    }
   }
 }
 

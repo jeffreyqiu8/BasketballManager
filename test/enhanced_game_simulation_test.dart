@@ -279,6 +279,161 @@ void main() {
         final newExperience = homePlayer.roleExperience[homePlayer.primaryRole] ?? 0.0;
         expect(newExperience, greaterThan(initialExperience));
       });
+
+      test('should increment games played by 1, not 2', () {
+        // Get initial games played
+        final homePlayer = homeTeam.players[0] as EnhancedPlayer;
+        final awayPlayer = awayTeam.players[0] as EnhancedPlayer;
+        final initialHomeGames = homePlayer.gamesPlayed;
+        final initialAwayGames = awayPlayer.gamesPlayed;
+        
+        // Simulate one game
+        EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, 1);
+        
+        // Should have incremented by exactly 1
+        expect(homePlayer.gamesPlayed, equals(initialHomeGames + 1));
+        expect(awayPlayer.gamesPlayed, equals(initialAwayGames + 1));
+      });
+
+      test('should increment games played correctly across multiple games', () {
+        // Get initial games played
+        final homePlayer = homeTeam.players[0] as EnhancedPlayer;
+        final awayPlayer = awayTeam.players[0] as EnhancedPlayer;
+        final initialHomeGames = homePlayer.gamesPlayed;
+        final initialAwayGames = awayPlayer.gamesPlayed;
+        
+        // Simulate multiple games with different matchdays
+        for (int i = 1; i <= 3; i++) {
+          EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, i);
+        }
+        
+        // Should have incremented by exactly 3
+        expect(homePlayer.gamesPlayed, equals(initialHomeGames + 3));
+        expect(awayPlayer.gamesPlayed, equals(initialAwayGames + 3));
+      });
+
+      test('should not double-count games when simulating same matchday twice', () {
+        // Get initial games played
+        final homePlayer = homeTeam.players[0] as EnhancedPlayer;
+        final awayPlayer = awayTeam.players[0] as EnhancedPlayer;
+        final initialHomeGames = homePlayer.gamesPlayed;
+        final initialAwayGames = awayPlayer.gamesPlayed;
+        
+        // Simulate same matchday twice
+        EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, 10);
+        EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, 10);
+        
+        // Should have incremented by exactly 1 (not 2)
+        expect(homePlayer.gamesPlayed, equals(initialHomeGames + 1));
+        expect(awayPlayer.gamesPlayed, equals(initialAwayGames + 1));
+      });
+
+      test('should not double-increment games played when called from conference', () {
+        // This test simulates the scenario where EnhancedConference.simulateMatchday()
+        // calls both simulateGame() and _updatePlayerStatistics()
+        
+        final homePlayer = homeTeam.players[0] as EnhancedPlayer;
+        final awayPlayer = awayTeam.players[0] as EnhancedPlayer;
+        final initialHomeGames = homePlayer.gamesPlayed;
+        final initialAwayGames = awayPlayer.gamesPlayed;
+        
+        // Simulate the game (this increments gamesPlayed in recordPerformance)
+        final result = EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, 20);
+        
+        // Manually simulate what _updatePlayerStatistics used to do (the bug)
+        // This should NOT increment gamesPlayed again
+        final homeBoxScore = result['homeBoxScore'] as Map<String, Map<String, int>>;
+        final awayBoxScore = result['awayBoxScore'] as Map<String, Map<String, int>>;
+        
+        for (final player in homeTeam.players) {
+          final playerStats = homeBoxScore[player.name]!;
+          // The old buggy code would do: player.gamesPlayed += 1; here
+          // But we've fixed it to not double-increment
+          player.points += playerStats['points'] ?? 0;
+          player.rebounds += playerStats['rebounds'] ?? 0;
+          player.assists += playerStats['assists'] ?? 0;
+        }
+        
+        for (final player in awayTeam.players) {
+          final playerStats = awayBoxScore[player.name]!;
+          // The old buggy code would do: player.gamesPlayed += 1; here
+          // But we've fixed it to not double-increment
+          player.points += playerStats['points'] ?? 0;
+          player.rebounds += playerStats['rebounds'] ?? 0;
+          player.assists += playerStats['assists'] ?? 0;
+        }
+        
+        // Should have incremented by exactly 1 (not 2)
+        expect(homePlayer.gamesPlayed, equals(initialHomeGames + 1));
+        expect(awayPlayer.gamesPlayed, equals(initialAwayGames + 1));
+      });
+
+      test('should handle player statistics correctly without duplication', () {
+        // This test verifies that recordPerformance() handles all the statistics
+        // and we don't need additional _updatePlayerStatistics() calls
+        
+        final homePlayer = homeTeam.players[0] as EnhancedPlayer;
+        final initialGames = homePlayer.gamesPlayed;
+        final initialPoints = homePlayer.points;
+        
+        // Simulate the game (this calls recordPerformance internally)
+        final result = EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, 25);
+        
+        // Verify that games played was incremented
+        expect(homePlayer.gamesPlayed, equals(initialGames + 1));
+        
+        // Verify that performance was recorded
+        expect(homePlayer.performances.containsKey(25), isTrue);
+        
+        // Verify that season totals were updated
+        expect(homePlayer.points, greaterThan(initialPoints));
+        
+        // The points should match the sum of all performances
+        int expectedPoints = 0;
+        for (final performance in homePlayer.performances.values) {
+          expectedPoints += performance['points'] as int;
+        }
+        expect(homePlayer.points, equals(expectedPoints));
+      });
+
+      test('should update both enhanced and base player statistics', () {
+        // This test verifies that both the enhanced players used in simulation
+        // and the original team players get their statistics updated
+        
+        final homePlayer = homeTeam.players[0] as EnhancedPlayer;
+        final awayPlayer = awayTeam.players[0] as EnhancedPlayer;
+        
+        final initialHomeGames = homePlayer.gamesPlayed;
+        final initialAwayGames = awayPlayer.gamesPlayed;
+        final initialHomePoints = homePlayer.points;
+        final initialAwayPoints = awayPlayer.points;
+        
+        // Simulate the game
+        final result = EnhancedGameSimulation.simulateGame(homeTeam, awayTeam, 30);
+        
+        // Verify games played incremented by 1
+        expect(homePlayer.gamesPlayed, equals(initialHomeGames + 1));
+        expect(awayPlayer.gamesPlayed, equals(initialAwayGames + 1));
+        
+        // Verify performances were recorded
+        expect(homePlayer.performances.containsKey(30), isTrue);
+        expect(awayPlayer.performances.containsKey(30), isTrue);
+        
+        // Verify season totals were updated
+        expect(homePlayer.points, greaterThanOrEqualTo(initialHomePoints));
+        expect(awayPlayer.points, greaterThanOrEqualTo(initialAwayPoints));
+        
+        // Verify the box score data is consistent with recorded performance
+        final homeBoxScore = result['homeBoxScore'] as Map<String, Map<String, int>>;
+        final awayBoxScore = result['awayBoxScore'] as Map<String, Map<String, int>>;
+        
+        final homePlayerBoxScore = homeBoxScore[homePlayer.name]!;
+        final awayPlayerBoxScore = awayBoxScore[awayPlayer.name]!;
+        
+        expect(homePlayer.performances[30]!['points'], equals(homePlayerBoxScore['points']));
+        expect(awayPlayer.performances[30]!['points'], equals(awayPlayerBoxScore['points']));
+      });
+
     });
 
     group('Role-Based Behavior', () {

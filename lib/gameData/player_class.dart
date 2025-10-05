@@ -93,6 +93,8 @@ class Player {
     updateSeasonTotals();
   }
 
+
+
   Map<String, int>? getPerformance(int matchday) {
     return performances[matchday];
   }

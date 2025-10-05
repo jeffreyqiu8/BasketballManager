@@ -3,9 +3,6 @@ import 'package:BasketballManager/gameData/conference_class.dart';
 import 'package:BasketballManager/gameData/enhanced_conference.dart';
 import 'package:BasketballManager/gameData/team_class.dart';
 import 'package:BasketballManager/views/pages/team_profile_page.dart';
-import '../widgets/accessible_widgets.dart';
-import '../widgets/help_system.dart';
-import '../widgets/user_feedback_system.dart';
 
 class ConferenceStandingsPage extends StatefulWidget {
   final Conference conference;

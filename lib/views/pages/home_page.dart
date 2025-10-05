@@ -355,7 +355,7 @@ class _HomePageState extends State<HomePage> {
                             MaterialPageRoute(
                               builder: (context) => PlaybookManagerPage(
                                 team: managedTeam is EnhancedTeam 
-                                  ? managedTeam as EnhancedTeam
+                                  ? managedTeam
                                   : EnhancedTeam(
                                       name: managedTeam.name,
                                       reputation: managedTeam.reputation,
@@ -487,25 +487,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // 🔘 Reusable Button
-  Widget _homeButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 22),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color.fromARGB(255, 44, 44, 44),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.all(14),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
-  }
+
 
   // 🔤 Section Heading Style
   TextStyle _sectionTitleStyle() {

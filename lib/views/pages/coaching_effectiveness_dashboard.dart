@@ -3,7 +3,6 @@ import 'package:BasketballManager/gameData/enhanced_coach.dart';
 import 'package:BasketballManager/gameData/enhanced_team.dart';
 import 'package:BasketballManager/gameData/enhanced_player.dart';
 import 'package:BasketballManager/gameData/enums.dart';
-import '../widgets/accessible_widgets.dart';
 import '../widgets/help_system.dart';
 import '../widgets/user_feedback_system.dart';
 

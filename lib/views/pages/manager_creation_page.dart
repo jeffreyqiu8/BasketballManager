@@ -123,19 +123,36 @@ class _ManagerProfilePageState extends State<ManagerProfilePage> {
             .doc(game.currentManager.name)
             .set(game.toMap());
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Manager Profile and Game Saved')),
-        );
-
-        // Navigate to the next page
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) {
-              return WidgetTree(game: game,); 
-            }
-          )
+        // Show success message and ask user what to do next
+        showDialog(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              title: Text('Save Created Successfully!'),
+              content: Text('Your manager profile "${game.currentManager.name}" has been saved. What would you like to do?'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext); // Close dialog
+                    Navigator.pop(context); // Go back to saves list
+                  },
+                  child: Text('View Saves'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext); // Close dialog
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WidgetTree(game: game),
+                      ),
+                    );
+                  },
+                  child: Text('Start Playing'),
+                ),
+              ],
+            );
+          },
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(

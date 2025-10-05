@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:BasketballManager/gameData/game_class.dart';
 import 'package:BasketballManager/views/widget_tree.dart';
+import 'package:BasketballManager/views/pages/manager_creation_page.dart';
 
 class LoadingManagerProfilesPage extends StatefulWidget {
   const LoadingManagerProfilesPage({super.key});
@@ -21,6 +22,14 @@ class _LoadingManagerProfilesPageState extends State<LoadingManagerProfilesPage>
   @override
   void initState() {
     super.initState();
+    _loadGameFiles();
+  }
+
+  // Refresh the game files when returning to this page
+  void _refreshGameFiles() {
+    setState(() {
+      _isLoading = true;
+    });
     _loadGameFiles();
   }
 
@@ -55,33 +64,121 @@ class _LoadingManagerProfilesPageState extends State<LoadingManagerProfilesPage>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Game Profiles'),
-        leading: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
+        automaticallyImplyLeading: false, // Remove back button
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ManagerProfilePage()),
+              );
+              // Refresh the list when returning from manager creation
+              _refreshGameFiles();
             },
-            icon:Icon(Icons.arrow_back),
+            icon: Icon(Icons.add),
+            tooltip: 'Create New Save',
           ),
+        ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())  // Show loading indicator while data is being fetched
-          : _gameFiles.isEmpty
-              ? Center(child: Text('No game profiles found.'))  // Show message if no profiles are found
-              : ListView.builder(
-                  itemCount: _gameFiles.length,
-                  itemBuilder: (context, index) {
-                    final Game game= _gameFiles[index];
-                    return ListTile(
-                      title: Text(game.currentManager.name),
-                      subtitle: Text('${game.currentManager.team} | ${game.currentManager.experienceYears} years experience'),
-                      onTap: () {
-                        Navigator.pushReplacement(
-                           context,
-                           MaterialPageRoute(builder: (context) => WidgetTree(game: game,)),
+          : Column(
+              children: [
+                // Create New Save Button (when no saves exist)
+                if (_gameFiles.isEmpty)
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.sports_basketball,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'No game profiles found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Create your first manager profile to get started',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                          SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => ManagerProfilePage()),
+                              );
+                              // Refresh the list when returning from manager creation
+                              _refreshGameFiles();
+                            },
+                            icon: Icon(Icons.add),
+                            label: Text('Create New Save'),
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  // Existing saves list
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _gameFiles.length,
+                      itemBuilder: (context, index) {
+                        final Game game= _gameFiles[index];
+                        return ListTile(
+                          title: Text(game.currentManager.name),
+                          subtitle: Text('${game.currentManager.team} | ${game.currentManager.experienceYears} years experience'),
+                          trailing: Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.pushReplacement(
+                               context,
+                               MaterialPageRoute(builder: (context) => WidgetTree(game: game,)),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                
+                // Create New Save Button (when saves exist)
+                if (_gameFiles.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => ManagerProfilePage()),
+                          );
+                          // Refresh the list when returning from manager creation
+                          _refreshGameFiles();
+                        },
+                        icon: Icon(Icons.add),
+                        label: Text('Create New Save'),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 }

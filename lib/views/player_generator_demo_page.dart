@@ -51,7 +51,8 @@ class _PlayerGeneratorDemoPageState extends State<PlayerGeneratorDemoPage> {
         itemBuilder: (context, index) {
           final player = _players[index];
           return Semantics(
-            label: 'Player ${index + 1}: ${player.name}, '
+            label:
+                'Player ${index + 1}: ${player.name}, '
                 'Overall rating ${player.overallRating}',
             child: _PlayerCard(player: player, index: index),
           );
@@ -66,10 +67,7 @@ class _PlayerCard extends StatelessWidget {
   final Player player;
   final int index;
 
-  const _PlayerCard({
-    required this.player,
-    required this.index,
-  });
+  const _PlayerCard({required this.player, required this.index});
 
   @override
   Widget build(BuildContext context) {
@@ -89,8 +87,8 @@ class _PlayerCard extends StatelessWidget {
                   child: Text(
                     player.name,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Container(

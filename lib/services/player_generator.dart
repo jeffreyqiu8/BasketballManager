@@ -2,6 +2,9 @@ import 'dart:math';
 import 'package:uuid/uuid.dart';
 import '../models/player.dart';
 
+// Import math functions for normal distribution
+import 'dart:math' show sqrt, log, cos, pi;
+
 /// Service for generating random players with realistic stats and names
 class PlayerGenerator {
   final Random _random = Random();
@@ -58,7 +61,18 @@ class PlayerGenerator {
   }
 
   /// Generates a random stat value in the range 0-100
+  /// Uses a normal distribution centered around 65 with standard deviation of 15
+  /// This creates stats averaging 60-70 with some outliers
   int _generateStat() {
-    return _random.nextInt(101); // 0 to 100 inclusive
+    // Generate a value using Box-Muller transform for normal distribution
+    double u1 = _random.nextDouble();
+    double u2 = _random.nextDouble();
+    double z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * pi * u2);
+    
+    // Mean of 65, standard deviation of 15
+    double value = 65 + (z0 * 15);
+    
+    // Clamp to 0-100 range
+    return value.clamp(0, 100).round();
   }
 }

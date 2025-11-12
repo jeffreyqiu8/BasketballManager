@@ -1,0 +1,222 @@
+{
+  "summary": {
+    "totalFiles": 97,
+    "active": 81,
+    "unused": 5,
+    "testOnly": 9,
+    "example": 2,
+    "documentation": 0,
+    "duplicate": 2
+  },
+  "categories": {
+    "unused": [
+      {
+        "path": "lib/main.dart",
+        "imports": 6
+      },
+      {
+        "path": "lib/views/pages/career_statistics_page.dart",
+        "imports": 5
+      },
+      {
+        "path": "lib/views/pages/save_management_page.dart",
+        "imports": 8
+      },
+      {
+        "path": "lib/views/widgets/enhanced_tooltips.dart",
+        "imports": 0
+      },
+      {
+        "path": "lib/views/widgets/save_recovery_widget.dart",
+        "imports": 2
+      }
+    ],
+    "testOnly": [
+      {
+        "path": "lib/gameData/aging_service.dart",
+        "importedBy": [
+          "test/aging_service_test.dart"
+        ],
+        "isDuplicate": false,
+        "duplicateOf": null
+      },
+      {
+        "path": "lib/gameData/optimized_league_service.dart",
+        "importedBy": [
+          "test/performance_optimization_enhanced_test.dart"
+        ],
+        "isDuplicate": false,
+        "duplicateOf": null
+      },
+      {
+        "path": "lib/gameData/optimized_match_history_service.dart",
+        "importedBy": [
+          "test/performance_optimization_enhanced_test.dart"
+        ],
+        "isDuplicate": true,
+        "duplicateOf": "lib/gameData/match_history_service.dart"
+      },
+      {
+        "path": "lib/gameData/optimized_save_manager.dart",
+        "importedBy": [
+          "test/performance_optimization_enhanced_test.dart"
+        ],
+        "isDuplicate": true,
+        "duplicateOf": "lib/gameData/save_manager.dart"
+      },
+      {
+        "path": "lib/gameData/strategy_history.dart",
+        "importedBy": [
+          "test/strategy_history_test.dart"
+        ],
+        "isDuplicate": false,
+        "duplicateOf": null
+      },
+      {
+        "path": "lib/main_accessibility.dart",
+        "importedBy": [
+          "test/accessibility_integration_test.dart"
+        ],
+        "isDuplicate": false,
+        "duplicateOf": null
+      },
+      {
+        "path": "lib/views/pages/enhanced_schedule_page.dart",
+        "importedBy": [
+          "test/enhanced_schedule_page_test.dart"
+        ],
+        "isDuplicate": false,
+        "duplicateOf": null
+      },
+      {
+        "path": "lib/views/widgets/in_game_strategy_selector.dart",
+        "importedBy": [
+          "test/in_game_strategy_selector_test.dart"
+        ],
+        "isDuplicate": false,
+        "duplicateOf": null
+      },
+      {
+        "path": "lib/views/widgets/lazy_loading_widget.dart",
+        "importedBy": [
+          "test/user_experience_test.dart"
+        ],
+        "isDuplicate": false,
+        "duplicateOf": null
+      }
+    ],
+    "example": [
+      {
+        "path": "lib/gameData/league_expansion_example.dart"
+      },
+      {
+        "path": "lib/gameData/save_backup_integration_example.dart"
+      }
+    ],
+    "documentation": [],
+    "duplicate": [
+      {
+        "path": "lib/gameData/optimized_match_history_service.dart",
+        "duplicateOf": "lib/gameData/match_history_service.dart",
+        "importedBy": [
+          "test/performance_optimization_enhanced_test.dart"
+        ]
+      },
+      {
+        "path": "lib/gameData/optimized_save_manager.dart",
+        "duplicateOf": "lib/gameData/save_manager.dart",
+        "importedBy": [
+          "test/performance_optimization_enhanced_test.dart"
+        ]
+      }
+    ]
+  },
+  "topDependencies": [
+    {
+      "path": "lib/gameData/enums.dart",
+      "dependents": 63
+    },
+    {
+      "path": "lib/gameData/enhanced_player.dart",
+      "dependents": 36
+    },
+    {
+      "path": "lib/gameData/enhanced_team.dart",
+      "dependents": 28
+    },
+    {
+      "path": "lib/gameData/enhanced_coach.dart",
+      "dependents": 26
+    },
+    {
+      "path": "lib/gameData/player_class.dart",
+      "dependents": 22
+    },
+    {
+      "path": "lib/gameData/team_class.dart",
+      "dependents": 20
+    },
+    {
+      "path": "lib/gameData/development_system.dart",
+      "dependents": 18
+    },
+    {
+      "path": "lib/gameData/enhanced_conference.dart",
+      "dependents": 17
+    },
+    {
+      "path": "lib/gameData/game_result.dart",
+      "dependents": 15
+    },
+    {
+      "path": "lib/gameData/playbook.dart",
+      "dependents": 14
+    },
+    {
+      "path": "lib/views/widgets/user_feedback_system.dart",
+      "dependents": 12
+    },
+    {
+      "path": "lib/views/widgets/help_system.dart",
+      "dependents": 12
+    },
+    {
+      "path": "lib/gameData/nba_team_data.dart",
+      "dependents": 12
+    },
+    {
+      "path": "lib/gameData/enhanced_data_models.dart",
+      "dependents": 9
+    },
+    {
+      "path": "lib/gameData/game_class.dart",
+      "dependents": 9
+    },
+    {
+      "path": "lib/views/widgets/accessible_widgets.dart",
+      "dependents": 7
+    },
+    {
+      "path": "lib/gameData/league_structure.dart",
+      "dependents": 7
+    },
+    {
+      "path": "lib/gameData/team_game_stats.dart",
+      "dependents": 7
+    },
+    {
+      "path": "lib/gameData/team_generation_service.dart",
+      "dependents": 6
+    },
+    {
+      "path": "lib/gameData/coach_class.dart",
+      "dependents": 6
+    }
+  ],
+  "recommendations": [
+    "Remove 5 unused files",
+    "Move 2 example files to examples/ directory",
+    "Consolidate 2 duplicate implementations",
+    "Review 9 test-only files"
+  ]
+}

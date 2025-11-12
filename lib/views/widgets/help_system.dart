@@ -65,6 +65,77 @@ class HelpSystem {
 
   /// Initialize default help content
   void initializeDefaultContent() {
+    // Save Creation Help
+    registerHelpContent('save_creation', HelpContent(
+      title: 'Save Creation',
+      sections: [
+        HelpSection(
+          title: 'Creating Your Save',
+          content: 'Follow the step-by-step wizard to create your basketball management career:\n\n'
+              '• Basic Information: Name and describe your save file\n'
+              '• Team Selection: Choose from 30 NBA teams\n'
+              '• Coach Profile: Set your coaching specializations\n'
+              '• League Settings: Configure the 30-team league structure\n'
+              '• Difficulty: Adjust gameplay challenge level',
+        ),
+        HelpSection(
+          title: 'Save File Management',
+          content: 'Your save files contain all your progress including team roster, '
+              'season history, player development, and achievements. Choose meaningful names '
+              'and descriptions to easily identify different careers.',
+        ),
+      ],
+    ));
+
+    // Save Management Help
+    registerHelpContent('save_management', HelpContent(
+      title: 'Save Management',
+      sections: [
+        HelpSection(
+          title: 'Managing Your Saves',
+          content: 'Organize and manage multiple basketball careers:\n\n'
+              '• Load: Continue an existing career\n'
+              '• Rename: Change save file names\n'
+              '• Duplicate: Create copies for experimentation\n'
+              '• Export/Import: Share saves or create backups\n'
+              '• Delete: Remove unwanted save files',
+        ),
+        HelpSection(
+          title: 'Save Information',
+          content: 'Each save displays key information:\n\n'
+              '• Team name and coach\n'
+              '• Current season and record\n'
+              '• League position and playoff status\n'
+              '• Total playtime and last played date\n'
+              '• Conference and division',
+        ),
+      ],
+    ));
+
+    // Match History Help
+    registerHelpContent('match_history', HelpContent(
+      title: 'Match History',
+      sections: [
+        HelpSection(
+          title: 'Game Records',
+          content: 'View comprehensive records of all games played:\n\n'
+              '• Game results with scores and statistics\n'
+              '• Filter by season, opponent, or result\n'
+              '• Detailed box scores and player performance\n'
+              '• Playoff and regular season games\n'
+              '• Head-to-head records against opponents',
+        ),
+        HelpSection(
+          title: 'Statistics and Trends',
+          content: 'Analyze your team\'s performance over time:\n\n'
+              '• Season-by-season statistics\n'
+              '• Performance trends and analytics\n'
+              '• Home vs away record comparison\n'
+              '• Scoring averages and defensive metrics',
+        ),
+      ],
+    ));
+
     // Coach Profile Help
     registerHelpContent('coach_profile', HelpContent(
       title: 'Coach Profile',
@@ -146,6 +217,23 @@ class HelpSystem {
           title: 'Role Compatibility',
           content: 'Players perform better in roles that match their skills. '
               'Check compatibility ratings when assigning positions.',
+        ),
+      ],
+    ));
+
+    // Save Creation Basic Help
+    registerHelpContent('save_creation_basic', HelpContent(
+      title: 'Save Creation - Basic Information',
+      sections: [
+        HelpSection(
+          title: 'Naming Your Save',
+          content: 'Choose a descriptive name for your basketball management career. '
+              'This will help you identify the save file later when you have multiple careers.',
+        ),
+        HelpSection(
+          title: 'Description (Optional)',
+          content: 'Add a description to remember what makes this career special. '
+              'For example: "Rebuilding the Lakers" or "Championship run with rookies".',
         ),
       ],
     ));

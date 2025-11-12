@@ -1,47 +1,76 @@
 import 'package:flutter/material.dart';
-import 'package:BasketballManager/data/notifiers.dart';
-import 'package:BasketballManager/views/pages/login_page.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'views/player_generator_demo_page.dart';
 
-
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Basketball Manager',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const PlaceholderHomePage(),
+    );
+  }
 }
 
-class _MyAppState extends State<MyApp> {
+class PlaceholderHomePage extends StatelessWidget {
+  const PlaceholderHomePage({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable:  isDarkModeNotifier,
-      builder: (BuildContext context, dynamic isDarkMode, Widget? child) {
-        return  MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData.dark().copyWith(
-          scaffoldBackgroundColor: const Color.fromARGB(255, 29, 29, 29),
-          colorScheme: ColorScheme.dark(
-            primary: const Color.fromARGB(255, 82, 50, 168),
-            secondary: const Color.fromARGB(255, 63, 18, 71),
-          ),
-          cardColor: const Color(0xFF1E1E1E),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color.fromARGB(255, 29, 29, 29),
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Basketball Manager'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.sports_basketball,
+              size: 100,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Basketball Manager',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Simplified Offline Version',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 40),
+            Semantics(
+              label: 'View player generator demo',
+              button: true,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PlayerGeneratorDemoPage(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.person_add),
+                label: const Text('Player Generator Demo'),
+              ),
+            ),
+          ],
         ),
-        home: LoginPage(),
-      );
-      },
+      ),
     );
   }
 }

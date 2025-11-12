@@ -26,7 +26,7 @@ class AccessibleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget card = Card(
-      color: backgroundColor ?? (selected ? Theme.of(context).primaryColor.withOpacity(0.1) : null),
+      color: backgroundColor ?? (selected ? Theme.of(context).primaryColor.withValues(alpha: 0.1) : null),
       elevation: elevation ?? (selected ? 8.0 : 2.0),
       child: Padding(
         padding: padding ?? EdgeInsets.all(16.0),
@@ -393,7 +393,7 @@ class AccessibleProgressIndicator extends StatelessWidget {
 }
 
 /// Accessible tab bar with proper navigation
-class AccessibleTabBar extends StatelessWidget {
+class AccessibleTabBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Tab> tabs;
   final TabController? controller;
   final ValueChanged<int>? onTap;
@@ -406,6 +406,9 @@ class AccessibleTabBar extends StatelessWidget {
     this.onTap,
     this.isScrollable = false,
   });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
@@ -466,7 +469,7 @@ class AccessibleListTile extends StatelessWidget {
         onTap: enabled ? onTap : null,
         selected: selected,
         enabled: enabled,
-        selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
+        selectedTileColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
       ),
     );
   }

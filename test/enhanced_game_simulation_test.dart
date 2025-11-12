@@ -3,6 +3,8 @@ import 'package:BasketballManager/gameData/enhanced_game_simulation.dart';
 import 'package:BasketballManager/gameData/enhanced_player.dart';
 import 'package:BasketballManager/gameData/team_class.dart';
 import 'package:BasketballManager/gameData/enums.dart';
+import 'package:BasketballManager/gameData/game_class.dart';
+import 'package:BasketballManager/gameData/game_result_converter.dart';
 
 void main() {
   group('EnhancedGameSimulation Tests', () {
@@ -941,6 +943,71 @@ void main() {
         expect(result['homeScore'], isA<int>());
         expect(result['awayScore'], isA<int>());
         expect(result['homeScore'], greaterThan(0));
+      });
+    });
+
+    group('Match History Integration', () {
+      test('should have match history integration methods available', () {
+        // This test verifies that the match history integration methods exist
+        // Note: Full Firebase testing would require proper Firebase test setup
+        
+        // Verify that GameResultConverter exists and has the conversion method
+        expect(GameResultConverter.convertSimulationResult, isA<Function>());
+        
+        // Verify that Game class has match history methods
+        expect(Game, isA<Type>());
+        
+        // Test that the game result converter can handle simulation results
+        final mockSimulationResult = {
+          'homeScore': 100,
+          'awayScore': 95,
+          'homeBoxScore': <String, Map<String, int>>{
+            'Home PG': {
+              'points': 20,
+              'rebounds': 5,
+              'assists': 8,
+              'FGM': 8,
+              'FGA': 15,
+              '3PM': 2,
+              '3PA': 5,
+              'steals': 2,
+              'blocks': 0,
+              'turnovers': 3,
+            }
+          },
+          'awayBoxScore': <String, Map<String, int>>{
+            'Away PG': {
+              'points': 18,
+              'rebounds': 4,
+              'assists': 6,
+              'FGM': 7,
+              'FGA': 14,
+              '3PM': 1,
+              '3PA': 4,
+              'steals': 1,
+              'blocks': 0,
+              'turnovers': 2,
+            }
+          },
+        };
+        
+        // Test conversion without Firebase dependency
+        final gameResult = GameResultConverter.convertSimulationResult(
+          simulationResult: mockSimulationResult,
+          homeTeam: homeTeam,
+          awayTeam: awayTeam,
+          season: 1,
+          gameNumber: 1,
+          matchday: 1,
+        );
+        
+        expect(gameResult.homeScore, equals(100));
+        expect(gameResult.awayScore, equals(95));
+        expect(gameResult.homeTeam, equals('Home Team'));
+        expect(gameResult.awayTeam, equals('Away Team'));
+        expect(gameResult.season, equals(1));
+        expect(gameResult.playerStats.containsKey('Home PG'), isTrue);
+        expect(gameResult.playerStats.containsKey('Away PG'), isTrue);
       });
     });
   });

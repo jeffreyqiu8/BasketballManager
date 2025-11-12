@@ -144,9 +144,10 @@ class UserFeedbackSystem {
 
   void _processFeedback(FeedbackEntry feedback) {
     // Process feedback (could send to analytics service, etc.)
-    print('Feedback received: ${feedback.feature} - Rating: ${feedback.rating}');
+    // Log feedback for development purposes
+    debugPrint('Feedback received: ${feedback.feature} - Rating: ${feedback.rating}');
     if (feedback.comment.isNotEmpty) {
-      print('Comment: ${feedback.comment}');
+      debugPrint('Comment: ${feedback.comment}');
     }
   }
 }
@@ -173,7 +174,7 @@ class FeedbackEntry {
 enum FeedbackType {
   general,
   bug,
-  feature_request,
+  featureRequest,
   usability,
   performance,
 }
@@ -380,7 +381,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
         return 'General Feedback';
       case FeedbackType.bug:
         return 'Bug Report';
-      case FeedbackType.feature_request:
+      case FeedbackType.featureRequest:
         return 'Feature Request';
       case FeedbackType.usability:
         return 'Usability Issue';

@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:BasketballManager/gameData/player_class.dart';
+import 'package:BasketballManager/gameData/player.dart';
 import 'package:BasketballManager/gameData/team_class.dart';
 
 class Conference {
@@ -50,15 +50,23 @@ class Conference {
   int get getMatchday => matchday;  // Getter for matchday
 
   Team getTeam(String name) {
-    return teams.firstWhere((team) {
-      return team.name == name;
-    });
+    try {
+      return teams.firstWhere((team) {
+        return team.name == name;
+      });
+    } catch (e) {
+      throw ArgumentError('Team "$name" not found in conference "${this.name}". Available teams: ${teams.map((t) => t.name).join(', ')}');
+    }
   }
 
   Map<String, dynamic> getMatch(String homeTeam, int matchday) {
-    return schedule.firstWhere((game) {
-      return game['home'] == homeTeam && game['matchday'] == matchday;
-    });
+    try {
+      return schedule.firstWhere((game) {
+        return game['home'] == homeTeam && game['matchday'] == matchday;
+      });
+    } catch (e) {
+      throw ArgumentError('Match not found for home team "$homeTeam" on matchday $matchday');
+    }
   }
   // Method to get the schedule for a specific team
   List<Map<String, dynamic>> getScheduleForTeam(String teamName) {
@@ -141,10 +149,29 @@ class Conference {
 
     // Simulate the results of the games
     for (var game in currentMatchdayGames) {
+      // Find home team with error handling
+      Team? homeTeamNullable;
+      try {
+        homeTeamNullable = teams.firstWhere((team) => team.name == game['home']);
+      } catch (e) {
+        print('Error: Could not find home team "${game['home']}" in teams list');
+        print('Available teams: ${teams.map((t) => t.name).join(', ')}');
+        continue; // Skip this game
+      }
       
-
-      Team homeTeam = teams.firstWhere((team) => team.name == game['home']);
-      Team awayTeam = teams.firstWhere((team) => team.name == game['away']);
+      // Find away team with error handling
+      Team? awayTeamNullable;
+      try {
+        awayTeamNullable = teams.firstWhere((team) => team.name == game['away']);
+      } catch (e) {
+        print('Error: Could not find away team "${game['away']}" in teams list');
+        print('Available teams: ${teams.map((t) => t.name).join(', ')}');
+        continue; // Skip this game
+      }
+      
+      // At this point, both teams are guaranteed to be non-null
+      final Team homeTeam = homeTeamNullable;
+      final Team awayTeam = awayTeamNullable;
       
 
       // Simulate scores
@@ -355,6 +382,30 @@ class Conference {
     // Call generateSchedule() to ensure the schedule is populated in case Firebase didn't provide it
     if (conference.schedule.isEmpty) {
       conference.generateSchedule();
+    } else {
+      // Check if schedule team names match current team names
+      final currentTeamNames = conference.teams.map((team) => team.name).toSet();
+      bool mismatch = false;
+      
+      // Check a few games from the schedule to see if team names exist
+      for (final game in conference.schedule.take(5)) {
+        final homeName = game['home'] as String?;
+        final awayName = game['away'] as String?;
+        
+        if (homeName != null && !currentTeamNames.contains(homeName)) {
+          mismatch = true;
+          break;
+        }
+        if (awayName != null && !currentTeamNames.contains(awayName)) {
+          mismatch = true;
+          break;
+        }
+      }
+      
+      if (mismatch) {
+        print('Schedule team names don\'t match current teams. Regenerating schedule...');
+        conference.generateSchedule();
+      }
     }
 
     return conference;

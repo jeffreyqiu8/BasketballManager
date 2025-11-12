@@ -3,6 +3,7 @@
 class Player {
   final String id;
   final String name;
+  final int heightInches; // Height in inches (e.g., 72 = 6'0")
   final int shooting; // 0-100: Mid-range and close-range shooting ability
   final int defense; // 0-100: Defensive capability and steal potential
   final int speed; // 0-100: Movement speed and fast-break ability
@@ -15,6 +16,7 @@ class Player {
   Player({
     required this.id,
     required this.name,
+    required this.heightInches,
     required this.shooting,
     required this.defense,
     required this.speed,
@@ -24,6 +26,13 @@ class Player {
     required this.ballHandling,
     required this.threePoint,
   });
+
+  /// Get height formatted as feet and inches (e.g., "6'2\"")
+  String get heightFormatted {
+    final feet = heightInches ~/ 12;
+    final inches = heightInches % 12;
+    return "$feet'$inches\"";
+  }
 
   /// Calculate overall rating as average of all 8 stats
   int get overallRating {
@@ -44,6 +53,7 @@ class Player {
     return {
       'id': id,
       'name': name,
+      'heightInches': heightInches,
       'shooting': shooting,
       'defense': defense,
       'speed': speed,
@@ -60,6 +70,7 @@ class Player {
     return Player(
       id: json['id'] as String,
       name: json['name'] as String,
+      heightInches: json['heightInches'] as int,
       shooting: json['shooting'] as int,
       defense: json['defense'] as int,
       speed: json['speed'] as int,

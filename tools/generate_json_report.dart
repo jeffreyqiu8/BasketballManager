@@ -71,9 +71,9 @@ class ProjectAnalyzer {
           var importPath = match.group(1)!;
           
           if (importPath.startsWith('package:BasketballManager/')) {
-            importPath = 'lib/' + importPath.substring('package:BasketballManager/'.length);
+            importPath = 'lib/${importPath.substring('package:BasketballManager/'.length)}';
           } else if (importPath.startsWith('package:basketball_manager/')) {
-            importPath = 'lib/' + importPath.substring('package:basketball_manager/'.length);
+            importPath = 'lib/${importPath.substring('package:basketball_manager/'.length)}';
           } else if (importPath.startsWith('../') || importPath.startsWith('./')) {
             importPath = resolveRelativePath(fileInfo.path, importPath);
           } else if (!importPath.startsWith('package:') && !importPath.startsWith('dart:')) {

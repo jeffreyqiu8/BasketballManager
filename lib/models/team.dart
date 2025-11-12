@@ -16,7 +16,10 @@ class Team {
     required this.players,
     required this.startingLineupIds,
   }) : assert(players.length == 15, 'Team must have exactly 15 players'),
-       assert(startingLineupIds.length == 5, 'Starting lineup must have exactly 5 players');
+       assert(
+         startingLineupIds.length == 5,
+         'Starting lineup must have exactly 5 players',
+       );
 
   /// Get the starting lineup players
   List<Player> get startingLineup {
@@ -35,12 +38,12 @@ class Team {
   /// Calculate team rating based on starting lineup
   int get teamRating {
     if (startingLineup.isEmpty) return 0;
-    
+
     final totalRating = startingLineup.fold<int>(
       0,
       (sum, player) => sum + player.overallRating,
     );
-    
+
     return (totalRating / startingLineup.length).round();
   }
 
@@ -61,9 +64,13 @@ class Team {
       id: json['id'] as String,
       name: json['name'] as String,
       city: json['city'] as String,
-      players: (json['players'] as List)
-          .map((playerJson) => Player.fromJson(playerJson as Map<String, dynamic>))
-          .toList(),
+      players:
+          (json['players'] as List)
+              .map(
+                (playerJson) =>
+                    Player.fromJson(playerJson as Map<String, dynamic>),
+              )
+              .toList(),
       startingLineupIds: List<String>.from(json['startingLineupIds'] as List),
     );
   }

@@ -2,9 +2,6 @@ import 'dart:math';
 import 'package:uuid/uuid.dart';
 import '../models/player.dart';
 
-// Import math functions for normal distribution
-import 'dart:math' show sqrt, log, cos, pi;
-
 /// Service for generating random players with realistic stats and names
 class PlayerGenerator {
   final Random _random = Random();
@@ -12,23 +9,107 @@ class PlayerGenerator {
 
   // Lists for random name generation
   static const List<String> _firstNames = [
-    'James', 'Michael', 'Kobe', 'LeBron', 'Stephen', 'Kevin', 'Chris',
-    'Anthony', 'Dwyane', 'Russell', 'Kawhi', 'Paul', 'Damian', 'Kyrie',
-    'Jimmy', 'Joel', 'Giannis', 'Luka', 'Jayson', 'Devin', 'Trae',
-    'Donovan', 'Zion', 'Ja', 'Brandon', 'Nikola', 'Karl', 'Rudy',
-    'Ben', 'Khris', 'Jrue', 'CJ', 'Bradley', 'Pascal', 'Fred',
-    'Marcus', 'Julius', 'Tobias', 'DeMar', 'Kyle', 'Kemba', 'Victor',
-    'Kristaps', 'Jamal', 'Shai', 'De\'Aaron', 'Bam', 'Domantas', 'Malcolm'
+    'James',
+    'Michael',
+    'Kobe',
+    'LeBron',
+    'Stephen',
+    'Kevin',
+    'Chris',
+    'Anthony',
+    'Dwyane',
+    'Russell',
+    'Kawhi',
+    'Paul',
+    'Damian',
+    'Kyrie',
+    'Jimmy',
+    'Joel',
+    'Giannis',
+    'Luka',
+    'Jayson',
+    'Devin',
+    'Trae',
+    'Donovan',
+    'Zion',
+    'Ja',
+    'Brandon',
+    'Nikola',
+    'Karl',
+    'Rudy',
+    'Ben',
+    'Khris',
+    'Jrue',
+    'CJ',
+    'Bradley',
+    'Pascal',
+    'Fred',
+    'Marcus',
+    'Julius',
+    'Tobias',
+    'DeMar',
+    'Kyle',
+    'Kemba',
+    'Victor',
+    'Kristaps',
+    'Jamal',
+    'Shai',
+    'De\'Aaron',
+    'Bam',
+    'Domantas',
+    'Malcolm',
   ];
 
   static const List<String> _lastNames = [
-    'Johnson', 'Jordan', 'Bryant', 'James', 'Curry', 'Durant', 'Paul',
-    'Davis', 'Wade', 'Westbrook', 'Leonard', 'George', 'Lillard', 'Irving',
-    'Butler', 'Embiid', 'Antetokounmpo', 'Doncic', 'Tatum', 'Booker', 'Young',
-    'Mitchell', 'Williamson', 'Morant', 'Ingram', 'Jokic', 'Towns', 'Gobert',
-    'Simmons', 'Middleton', 'Holiday', 'McCollum', 'Beal', 'Siakam', 'VanVleet',
-    'Smart', 'Randle', 'Harris', 'DeRozan', 'Lowry', 'Walker', 'Oladipo',
-    'Porzingis', 'Murray', 'Gilgeous-Alexander', 'Fox', 'Adebayo', 'Sabonis', 'Brogdon'
+    'Johnson',
+    'Jordan',
+    'Bryant',
+    'James',
+    'Curry',
+    'Durant',
+    'Paul',
+    'Davis',
+    'Wade',
+    'Westbrook',
+    'Leonard',
+    'George',
+    'Lillard',
+    'Irving',
+    'Butler',
+    'Embiid',
+    'Antetokounmpo',
+    'Doncic',
+    'Tatum',
+    'Booker',
+    'Young',
+    'Mitchell',
+    'Williamson',
+    'Morant',
+    'Ingram',
+    'Jokic',
+    'Towns',
+    'Gobert',
+    'Simmons',
+    'Middleton',
+    'Holiday',
+    'McCollum',
+    'Beal',
+    'Siakam',
+    'VanVleet',
+    'Smart',
+    'Randle',
+    'Harris',
+    'DeRozan',
+    'Lowry',
+    'Walker',
+    'Oladipo',
+    'Porzingis',
+    'Murray',
+    'Gilgeous-Alexander',
+    'Fox',
+    'Adebayo',
+    'Sabonis',
+    'Brogdon',
   ];
 
   /// Generates a single player with random stats and name
@@ -36,6 +117,7 @@ class PlayerGenerator {
     return Player(
       id: _uuid.v4(),
       name: name ?? _generateRandomName(),
+      heightInches: _generateHeight(),
       shooting: _generateStat(),
       defense: _generateStat(),
       speed: _generateStat(),
@@ -45,6 +127,22 @@ class PlayerGenerator {
       ballHandling: _generateStat(),
       threePoint: _generateStat(),
     );
+  }
+
+  /// Generates a random height for a basketball player
+  /// Returns height in inches, ranging from 5'10" (70") to 7'2" (86")
+  /// Uses normal distribution centered around 6'6" (78") with standard deviation of 3"
+  int _generateHeight() {
+    // Generate a value using Box-Muller transform for normal distribution
+    double u1 = _random.nextDouble();
+    double u2 = _random.nextDouble();
+    double z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * pi * u2);
+
+    // Mean of 78 inches (6'6"), standard deviation of 3 inches
+    double value = 78 + (z0 * 3);
+
+    // Clamp to realistic basketball player height range: 70" (5'10") to 86" (7'2")
+    return value.clamp(70, 86).round();
   }
 
   /// Generates a list of players for a team roster
@@ -61,17 +159,17 @@ class PlayerGenerator {
   }
 
   /// Generates a random stat value in the range 0-100
-  /// Uses a normal distribution centered around 65 with standard deviation of 15
-  /// This creates stats averaging 60-70 with some outliers
+  /// Uses a normal distribution centered around 75 with standard deviation of 15
+  /// This creates stats averaging 70-80 with some outliers
   int _generateStat() {
     // Generate a value using Box-Muller transform for normal distribution
     double u1 = _random.nextDouble();
     double u2 = _random.nextDouble();
     double z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * pi * u2);
-    
-    // Mean of 65, standard deviation of 15
-    double value = 65 + (z0 * 15);
-    
+
+    // Mean of 75, standard deviation of 15
+    double value = 75 + (z0 * 15);
+
     // Clamp to 0-100 range
     return value.clamp(0, 100).round();
   }

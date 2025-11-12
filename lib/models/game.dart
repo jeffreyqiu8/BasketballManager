@@ -1,3 +1,5 @@
+import 'player_game_stats.dart';
+
 /// Game model with score tracking
 /// Represents a single basketball game between two teams
 class Game {
@@ -8,6 +10,7 @@ class Game {
   final int? awayScore; // Nullable: null indicates unplayed game
   final bool isPlayed;
   final DateTime scheduledDate;
+  final Map<String, PlayerGameStats>? boxScore; // Optional: player stats by playerId
 
   Game({
     required this.id,
@@ -17,6 +20,7 @@ class Game {
     this.awayScore,
     required this.isPlayed,
     required this.scheduledDate,
+    this.boxScore,
   });
 
   /// Check if the home team won
@@ -41,11 +45,20 @@ class Game {
       'awayScore': awayScore,
       'isPlayed': isPlayed,
       'scheduledDate': scheduledDate.toIso8601String(),
+      'boxScore': boxScore?.map((key, value) => MapEntry(key, value.toJson())),
     };
   }
 
   /// Create Game from JSON
   factory Game.fromJson(Map<String, dynamic> json) {
+    Map<String, PlayerGameStats>? boxScore;
+    if (json['boxScore'] != null) {
+      final boxScoreJson = json['boxScore'] as Map<String, dynamic>;
+      boxScore = boxScoreJson.map(
+        (key, value) => MapEntry(key, PlayerGameStats.fromJson(value as Map<String, dynamic>)),
+      );
+    }
+
     return Game(
       id: json['id'] as String,
       homeTeamId: json['homeTeamId'] as String,
@@ -54,6 +67,7 @@ class Game {
       awayScore: json['awayScore'] as int?,
       isPlayed: json['isPlayed'] as bool,
       scheduledDate: DateTime.parse(json['scheduledDate'] as String),
+      boxScore: boxScore,
     );
   }
 
@@ -66,6 +80,7 @@ class Game {
     int? awayScore,
     bool? isPlayed,
     DateTime? scheduledDate,
+    Map<String, PlayerGameStats>? boxScore,
   }) {
     return Game(
       id: id ?? this.id,
@@ -75,6 +90,12 @@ class Game {
       awayScore: awayScore ?? this.awayScore,
       isPlayed: isPlayed ?? this.isPlayed,
       scheduledDate: scheduledDate ?? this.scheduledDate,
+      boxScore: boxScore ?? this.boxScore,
     );
+  }
+
+  /// Create a copy of the game with box score
+  Game copyWithBoxScore(Map<String, PlayerGameStats> boxScore) {
+    return copyWith(boxScore: boxScore);
   }
 }

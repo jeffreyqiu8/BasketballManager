@@ -37,6 +37,7 @@ class _PlayerGeneratorDemoPageState extends State<PlayerGeneratorDemoPage> {
           Semantics(
             label: 'Generate new players',
             button: true,
+            hint: 'Creates 15 new random players',
             child: IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _generatePlayers,
@@ -45,18 +46,22 @@ class _PlayerGeneratorDemoPageState extends State<PlayerGeneratorDemoPage> {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _players.length,
-        itemBuilder: (context, index) {
-          final player = _players[index];
-          return Semantics(
-            label:
-                'Player ${index + 1}: ${player.name}, '
-                'Overall rating ${player.overallRating}',
-            child: _PlayerCard(player: player, index: index),
-          );
-        },
+      body: Semantics(
+        label: 'List of ${_players.length} generated players',
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16.0),
+          itemCount: _players.length,
+          itemBuilder: (context, index) {
+            final player = _players[index];
+            return Semantics(
+              label:
+                  'Player ${index + 1} of ${_players.length}: ${player.name}, '
+                  '${player.heightFormatted}, '
+                  'Overall rating ${player.overallRating}',
+              child: _PlayerCard(player: player, index: index),
+            );
+          },
+        ),
       ),
     );
   }
@@ -84,11 +89,25 @@ class _PlayerCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    player.name,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        player.name,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        player.heightFormatted,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Container(

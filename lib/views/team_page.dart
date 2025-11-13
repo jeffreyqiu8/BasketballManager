@@ -6,6 +6,7 @@ import '../models/player_season_stats.dart';
 import '../services/league_service.dart';
 import '../utils/accessibility_utils.dart';
 import '../utils/app_theme.dart';
+import '../widgets/star_rating.dart';
 
 /// TeamPage displays a single team's 15 players with lineup management
 /// Allows users to view all player stats and manage starting lineup
@@ -41,6 +42,20 @@ enum _SortColumn {
   freeThrowPercentage,
 }
 
+enum _RosterSortMode {
+  lineup, // Starters first, then bench
+  position, // Sorted by position (PG, SG, SF, PF, C)
+}
+
+enum _PositionFilter {
+  all,
+  pg,
+  sg,
+  sf,
+  pf,
+  c,
+}
+
 class _TeamPageState extends State<TeamPage>
     with SingleTickerProviderStateMixin {
   late Team _team;
@@ -54,6 +69,10 @@ class _TeamPageState extends State<TeamPage>
 
   // Track expanded player cards in season stats
   final Set<String> _expandedPlayerIds = {};
+
+  // Roster organization
+  _RosterSortMode _rosterSortMode = _RosterSortMode.lineup;
+  _PositionFilter _positionFilter = _PositionFilter.all;
 
   @override
   void initState() {
@@ -206,13 +225,13 @@ class _TeamPageState extends State<TeamPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Team info
-            Semantics(
-              label: 'Team rating: ${_team.teamRating}',
-              child: Builder(
-                builder: (context) {
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-                  return Card(
+            Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                
+                return Semantics(
+                  label: 'Team overall rating: ${_team.teamRating}',
+                  child: Card(
                     elevation: AppTheme.cardElevationMedium,
                     child: Padding(
                       padding: AppTheme.cardPadding,
@@ -220,78 +239,370 @@ class _TeamPageState extends State<TeamPage>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Team Rating',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleLarge?.copyWith(
-                              color:
-                                  isDark
-                                      ? AppTheme.textPrimaryDark
-                                      : AppTheme.textPrimaryLight,
+                            'Team Overall',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: isDark
+                                  ? AppTheme.textPrimaryDark
+                                  : AppTheme.textPrimaryLight,
                             ),
                           ),
                           Text(
                             '${_team.teamRating}',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.headlineMedium?.copyWith(
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color:
-                                  isDark
-                                      ? AppTheme.primaryColorDark
-                                      : AppTheme.primaryColor,
+                              color: isDark
+                                  ? AppTheme.primaryColorDark
+                                  : AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Position distribution summary
+            _buildPositionDistribution(),
+            const SizedBox(height: 16),
+
+            // Roster controls (sort mode and position filter)
+            _buildRosterControls(),
+            const SizedBox(height: 16),
+
+            // Display roster based on sort mode
+            if (_rosterSortMode == _RosterSortMode.lineup)
+              ..._buildLineupView()
+            else
+              ..._buildPositionView(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build position distribution summary
+  Widget _buildPositionDistribution() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Count players by position
+    final positionCounts = <String, int>{
+      'PG': 0,
+      'SG': 0,
+      'SF': 0,
+      'PF': 0,
+      'C': 0,
+    };
+    
+    for (var player in _team.players) {
+      positionCounts[player.position] = (positionCounts[player.position] ?? 0) + 1;
+    }
+
+    return Semantics(
+      label:
+          'Position distribution: ${positionCounts['PG']} Point Guards, ${positionCounts['SG']} Shooting Guards, ${positionCounts['SF']} Small Forwards, ${positionCounts['PF']} Power Forwards, ${positionCounts['C']} Centers',
+      child: Card(
+        elevation: AppTheme.cardElevationLow,
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.pie_chart,
+                    size: 18,
+                    color: isDark
+                        ? AppTheme.primaryColorDark
+                        : AppTheme.primaryColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Position Distribution',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? AppTheme.textPrimaryDark
+                          : AppTheme.textPrimaryLight,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: positionCounts.entries.map((entry) {
+                  return Semantics(
+                    label: '${entry.value} ${entry.key}',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isDark
+                                ? AppTheme.primaryColorDark
+                                : AppTheme.primaryColor)
+                            .withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isDark
+                              ? AppTheme.primaryColorDark
+                              : AppTheme.primaryColor,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            entry.key,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? AppTheme.primaryColorDark
+                                  : AppTheme.primaryColor,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${entry.value}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
                     ),
                   );
-                },
+                }).toList(),
               ),
-            ),
-            const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-            // Starting Lineup Section
-            Semantics(
-              label:
-                  'Starting lineup section with ${_selectedStarterIds.length} of 5 players selected',
-              child: _buildSectionHeader(
-                context,
-                'Starting Lineup (${_selectedStarterIds.length}/5)',
-                Icons.star,
+  /// Build roster controls (sort mode and position filter)
+  Widget _buildRosterControls() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Card(
+      elevation: AppTheme.cardElevationLow,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            // Sort mode selector
+            Row(
+              children: [
+                Icon(
+                  Icons.sort,
+                  size: 20,
+                  color: isDark
+                      ? AppTheme.primaryColorDark
+                      : AppTheme.primaryColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SegmentedButton<_RosterSortMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: _RosterSortMode.lineup,
+                        label: Text('Lineup'),
+                        icon: Icon(Icons.star, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: _RosterSortMode.position,
+                        label: Text('Position'),
+                        icon: Icon(Icons.sports_basketball, size: 16),
+                      ),
+                    ],
+                    selected: {_rosterSortMode},
+                    onSelectionChanged: (Set<_RosterSortMode> newSelection) {
+                      setState(() {
+                        _rosterSortMode = newSelection.first;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            
+            // Position filter (only show when in position mode)
+            if (_rosterSortMode == _RosterSortMode.position) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(
+                    Icons.filter_list,
+                    size: 20,
+                    color: isDark
+                        ? AppTheme.primaryColorDark
+                        : AppTheme.primaryColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildFilterChip('All', _PositionFilter.all),
+                        _buildFilterChip('PG', _PositionFilter.pg),
+                        _buildFilterChip('SG', _PositionFilter.sg),
+                        _buildFilterChip('SF', _PositionFilter.sf),
+                        _buildFilterChip('PF', _PositionFilter.pf),
+                        _buildFilterChip('C', _PositionFilter.c),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            ..._buildPlayerList(
-              _team.players
-                  .where((p) => _selectedStarterIds.contains(p.id))
-                  .toList(),
-              isStarter: true,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Bench Section
-            Semantics(
-              label:
-                  'Bench section with ${15 - _selectedStarterIds.length} players',
-              child: _buildSectionHeader(
-                context,
-                'Bench (${15 - _selectedStarterIds.length})',
-                Icons.event_seat,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ..._buildPlayerList(
-              _team.players
-                  .where((p) => !_selectedStarterIds.contains(p.id))
-                  .toList(),
-              isStarter: false,
-            ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildFilterChip(String label, _PositionFilter filter) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSelected = _positionFilter == filter;
+
+    return Semantics(
+      label: 'Filter by $label${isSelected ? ', selected' : ''}',
+      button: true,
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          setState(() {
+            _positionFilter = filter;
+          });
+        },
+        selectedColor: (isDark
+                ? AppTheme.primaryColorDark
+                : AppTheme.primaryColor)
+            .withValues(alpha: 0.3),
+        checkmarkColor: isDark
+            ? AppTheme.primaryColorDark
+            : AppTheme.primaryColor,
+      ),
+    );
+  }
+
+  /// Build lineup view (starters and bench)
+  List<Widget> _buildLineupView() {
+    final starters = _team.players
+        .where((p) => _selectedStarterIds.contains(p.id))
+        .toList();
+    final bench = _team.players
+        .where((p) => !_selectedStarterIds.contains(p.id))
+        .toList();
+
+    return [
+      // Starting Lineup Section
+      Semantics(
+        label:
+            'Starting lineup section with ${_selectedStarterIds.length} of 5 players selected',
+        child: _buildSectionHeader(
+          context,
+          'Starting Lineup (${_selectedStarterIds.length}/5)',
+          Icons.star,
+        ),
+      ),
+      const SizedBox(height: 8),
+      ..._buildPlayerList(starters, isStarter: true),
+      const SizedBox(height: 24),
+
+      // Bench Section
+      Semantics(
+        label:
+            'Bench section with ${15 - _selectedStarterIds.length} players',
+        child: _buildSectionHeader(
+          context,
+          'Bench (${15 - _selectedStarterIds.length})',
+          Icons.event_seat,
+        ),
+      ),
+      const SizedBox(height: 8),
+      ..._buildPlayerList(bench, isStarter: false),
+    ];
+  }
+
+  /// Build position view (sorted by position)
+  List<Widget> _buildPositionView() {
+    final positions = ['PG', 'SG', 'SF', 'PF', 'C'];
+    final widgets = <Widget>[];
+
+    for (var position in positions) {
+      // Skip if filtering and not the selected position
+      if (_positionFilter != _PositionFilter.all &&
+          _positionFilter.toString().split('.').last.toUpperCase() !=
+              position) {
+        continue;
+      }
+
+      final positionPlayers = _team.players
+          .where((p) => p.position == position)
+          .toList();
+
+      if (positionPlayers.isEmpty) continue;
+
+      // Separate starters and bench for this position
+      final starters = positionPlayers
+          .where((p) => _selectedStarterIds.contains(p.id))
+          .toList();
+      final bench = positionPlayers
+          .where((p) => !_selectedStarterIds.contains(p.id))
+          .toList();
+
+      // Position header
+      widgets.add(
+        Semantics(
+          label:
+              '$position section with ${positionPlayers.length} players, ${starters.length} starters',
+          child: _buildSectionHeader(
+            context,
+            '$position (${positionPlayers.length})',
+            Icons.sports_basketball,
+          ),
+        ),
+      );
+      widgets.add(const SizedBox(height: 8));
+
+      // Show starters first, then bench
+      widgets.addAll(_buildPlayerList(starters, isStarter: true));
+      widgets.addAll(_buildPlayerList(bench, isStarter: false));
+      widgets.add(const SizedBox(height: 24));
+    }
+
+    if (widgets.isEmpty) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Center(
+            child: Text(
+              'No players found for selected position',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return widgets;
   }
 
   Widget _buildSeasonStatsTab() {
@@ -543,7 +854,7 @@ class _TeamPageState extends State<TeamPage>
 
     return Semantics(
       label:
-          '${player.name}, ${stats.pointsPerGame.toStringAsFixed(1)} points per game, ${stats.reboundsPerGame.toStringAsFixed(1)} rebounds, ${stats.assistsPerGame.toStringAsFixed(1)} assists. Tap to ${isExpanded ? 'collapse' : 'expand'} details',
+          '${player.name}, ${player.position} position, ${stats.pointsPerGame.toStringAsFixed(1)} points per game, ${stats.reboundsPerGame.toStringAsFixed(1)} rebounds, ${stats.assistsPerGame.toStringAsFixed(1)} assists. Tap to ${isExpanded ? 'collapse' : 'expand'} details',
       button: true,
       child: Card(
         margin: const EdgeInsets.only(bottom: 12),
@@ -570,10 +881,36 @@ class _TeamPageState extends State<TeamPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            player.name,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                          Row(
+                            children: [
+                              Text(
+                                player.name,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(width: 8),
+                              // Position badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppTheme.primaryColorDark
+                                      : AppTheme.primaryColor,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  player.position,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -834,9 +1171,11 @@ class _TeamPageState extends State<TeamPage>
     final isSelected = _selectedStarterIds.contains(player.id);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final starRating = player.getStarRatingRounded(_team.players);
+    
     return Semantics(
       label:
-          '${player.name}, ${player.heightFormatted}, overall rating ${player.overallRating}, ${isSelected ? 'starter' : 'bench player'}. Tap to ${isSelected ? 'move to bench' : 'make starter'}',
+          '${player.name}, ${player.position} position, ${player.heightFormatted}, $starRating stars, ${isSelected ? 'starter' : 'bench player'}. Tap to ${isSelected ? 'move to bench' : 'make starter'}',
       button: true,
       child: Card(
         margin: const EdgeInsets.only(bottom: AppTheme.spacingMedium),
@@ -854,7 +1193,7 @@ class _TeamPageState extends State<TeamPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Player name and overall rating
+                // Player name, position, and overall rating
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -868,32 +1207,61 @@ class _TeamPageState extends State<TeamPage>
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            player.heightFormatted,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.textSecondary,
-                            ),
+                          Wrap(
+                            spacing: 8,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              // Position badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppTheme.primaryColorDark
+                                      : AppTheme.primaryColor,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  player.position,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                player.heightFormatted,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getRatingColor(player.overallRating),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'OVR ${player.overallRating}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        StarRating(
+                          rating: starRating,
+                          size: 20,
+                          showLabel: true,
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'OVR ${player.positionAdjustedRating}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -901,6 +1269,11 @@ class _TeamPageState extends State<TeamPage>
 
                 // Stats grid
                 _buildStatsGrid(player),
+                
+                const SizedBox(height: 12),
+                
+                // Position assignment section
+                _buildPositionAssignment(player),
               ],
             ),
           ),
@@ -961,13 +1334,243 @@ class _TeamPageState extends State<TeamPage>
     );
   }
 
-  Color _getRatingColor(int rating) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return AppTheme.getRatingColor(rating, isDark: isDark);
-  }
-
   Color _getStatColor(int stat) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppTheme.getRatingColor(stat, isDark: isDark);
+  }
+
+  /// Build position assignment UI with affinity visualization and selector
+  Widget _buildPositionAssignment(Player player) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final affinities = player.getPositionAffinities();
+    
+    // Find best-fit position
+    final bestPosition = affinities.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header with position selector
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Position',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isDark
+                    ? AppTheme.textPrimaryDark
+                    : AppTheme.textPrimaryLight,
+              ),
+            ),
+            // Position selector dropdown
+            Semantics(
+              label:
+                  'Change position for ${player.name}. Current position: ${player.position}',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: isDark
+                        ? AppTheme.primaryColorDark
+                        : AppTheme.primaryColor,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButton<String>(
+                  value: player.position,
+                  underline: Container(),
+                  isDense: true,
+                  items: ['PG', 'SG', 'SF', 'PF', 'C'].map((pos) {
+                    final affinity = affinities[pos]!;
+                    final isBestFit = pos == bestPosition;
+                    return DropdownMenuItem(
+                      value: pos,
+                      child: Semantics(
+                        label:
+                            '$pos, ${affinity.toStringAsFixed(0)}% fit${isBestFit ? ', best fit position' : ''}',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              pos,
+                              style: TextStyle(
+                                fontWeight: isBestFit
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            if (isBestFit)
+                              Icon(
+                                Icons.star,
+                                size: 14,
+                                color: isDark
+                                    ? AppTheme.successColorDark
+                                    : AppTheme.successColor,
+                              ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${affinity.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _getAffinityColor(affinity, isDark),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (newPosition) {
+                    if (newPosition != null && newPosition != player.position) {
+                      _updatePlayerPosition(player, newPosition);
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+
+        // Position affinity bars
+        Semantics(
+          label:
+              'Position affinities for ${player.name}. Best fit: $bestPosition at ${affinities[bestPosition]!.toStringAsFixed(0)}%',
+          child: Column(
+            children: affinities.entries.map((entry) {
+              final position = entry.key;
+              final affinity = entry.value;
+              final isBestFit = position == bestPosition;
+              final isCurrentPosition = position == player.position;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Semantics(
+                  label:
+                      '$position: ${affinity.toStringAsFixed(0)}% affinity${isBestFit ? ', best fit' : ''}${isCurrentPosition ? ', current position' : ''}',
+                  child: Row(
+                    children: [
+                      // Position label
+                      SizedBox(
+                        width: isBestFit ? 40 : 28,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              position,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isCurrentPosition
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isCurrentPosition
+                                    ? (isDark
+                                        ? AppTheme.primaryColorDark
+                                        : AppTheme.primaryColor)
+                                    : AppTheme.textSecondary,
+                              ),
+                            ),
+                            if (isBestFit) ...[
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.star,
+                                size: 12,
+                                color: isDark
+                                    ? AppTheme.successColorDark
+                                    : AppTheme.successColor,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Progress bar
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: affinity / 100,
+                            minHeight: 8,
+                            backgroundColor: isDark
+                                ? Colors.grey[800]
+                                : Colors.grey[300],
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              _getAffinityColor(affinity, isDark),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Percentage
+                      SizedBox(
+                        width: 36,
+                        child: Text(
+                          '${affinity.toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isBestFit
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            color: _getAffinityColor(affinity, isDark),
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Get color for affinity level
+  /// Green for 80+, yellow for 60-79, red for <60
+  Color _getAffinityColor(double affinity, bool isDark) {
+    if (affinity >= 80) {
+      return isDark ? AppTheme.successColorDark : AppTheme.successColor;
+    } else if (affinity >= 60) {
+      return isDark ? Colors.amber[300]! : Colors.amber[700]!;
+    } else {
+      return isDark ? AppTheme.errorColorDark : AppTheme.errorColor;
+    }
+  }
+
+  /// Update player position and save changes
+  Future<void> _updatePlayerPosition(Player player, String newPosition) async {
+    // Create updated player with new position
+    final updatedPlayer = player.copyWithPosition(newPosition);
+
+    // Update player in team's player list
+    final updatedPlayers = _team.players.map((p) {
+      return p.id == player.id ? updatedPlayer : p;
+    }).toList();
+
+    // Create updated team
+    final updatedTeam = _team.copyWith(players: updatedPlayers);
+
+    // Save to league service
+    await widget.leagueService.updateTeam(updatedTeam);
+
+    // Update local state
+    setState(() {
+      _team = updatedTeam;
+    });
+
+    if (mounted) {
+      AccessibilityUtils.showAccessibleSuccess(
+        context,
+        '${player.name} position changed to $newPosition',
+        duration: const Duration(seconds: 2),
+      );
+    }
   }
 }

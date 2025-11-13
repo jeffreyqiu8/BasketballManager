@@ -215,7 +215,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: AppTheme.spacingSmall),
               Text(
-                'Team Rating: ${_userTeam!.teamRating}',
+                'Team Overall: ${_userTeam!.teamRating}',
                 style: TextStyle(
                   fontSize: 16,
                   color:

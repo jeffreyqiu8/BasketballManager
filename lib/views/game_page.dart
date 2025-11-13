@@ -328,10 +328,7 @@ class _GamePageState extends State<GamePage> {
             const SizedBox(height: 16),
             
             // User team
-            Semantics(
-              label: 'Your team: ${_userTeam!.city} ${_userTeam!.name}, rating ${_userTeam!.teamRating}',
-              child: _buildTeamInfo(_userTeam!, isUserTeam: true),
-            ),
+            _buildTeamInfo(_userTeam!, isUserTeam: true),
             
             const SizedBox(height: 16),
             
@@ -346,10 +343,7 @@ class _GamePageState extends State<GamePage> {
             const SizedBox(height: 16),
             
             // Opponent team
-            Semantics(
-              label: 'Opponent: ${_opponentTeam!.city} ${_opponentTeam!.name}, rating ${_opponentTeam!.teamRating}',
-              child: _buildTeamInfo(_opponentTeam!, isUserTeam: false),
-            ),
+            _buildTeamInfo(_opponentTeam!, isUserTeam: false),
           ],
         ),
       ),
@@ -360,34 +354,39 @@ class _GamePageState extends State<GamePage> {
     return Builder(
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        return Container(
-          padding: AppTheme.cardPadding,
-          decoration: BoxDecoration(
-            color: isUserTeam 
-                ? (isDark ? AppTheme.infoColorDark : AppTheme.infoColor).withValues(alpha: 0.1)
-                : (isDark ? AppTheme.dividerColorDark : AppTheme.dividerColorLight),
-            borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-          ),
-          child: Column(
-            children: [
-              Text(
-                '${team.city} ${team.name}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+        
+        return Semantics(
+          label: '${isUserTeam ? "Your team" : "Opponent"}: ${team.city} ${team.name}, overall rating ${team.teamRating}',
+          child: Container(
+            padding: AppTheme.cardPadding,
+            decoration: BoxDecoration(
+              color: isUserTeam 
+                  ? (isDark ? AppTheme.infoColorDark : AppTheme.infoColor).withValues(alpha: 0.1)
+                  : (isDark ? AppTheme.dividerColorDark : AppTheme.dividerColorLight),
+              borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '${team.city} ${team.name}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppTheme.spacingSmall),
-              Text(
-                'Team Rating: ${team.teamRating}',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                const SizedBox(height: AppTheme.spacingSmall),
+                Text(
+                  'Overall: ${team.teamRating}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

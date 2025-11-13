@@ -65,7 +65,7 @@ class _TeamsListPageState extends State<TeamsListPage> {
 
   Widget _buildTeamCard(Team team) {
     return Semantics(
-      label: '${team.city} ${team.name}, team rating ${team.teamRating}, ${team.players.length} players. Tap to view team details.',
+      label: '${team.city} ${team.name}, overall rating ${team.teamRating}, ${team.players.length} players. Tap to view team details.',
       button: true,
       hint: 'Opens team roster and lineup management',
       child: Card(
@@ -95,7 +95,7 @@ class _TeamsListPageState extends State<TeamsListPage> {
             ),
           ),
           subtitle: Text(
-            'Team Rating: ${team.teamRating} • ${team.players.length} Players',
+            'Overall: ${team.teamRating} • ${team.players.length} Players',
             style: const TextStyle(
               color: AppTheme.textSecondary,
             ),

@@ -174,7 +174,17 @@ class PossessionSimulation {
   bool _determineShotType(Player shooter) {
     // Higher threePoint attribute = more likely to attempt 3PT
     // Base 35% chance, +0.3% per threePoint point
-    final threePointChance = 35 + (shooter.threePoint * 0.3);
+    double threePointChance = 35 + (shooter.threePoint * 0.3);
+    
+    // Position-based modifiers
+    if (shooter.position == 'SG') {
+      // Shooting guards get +20% to three-point attempt probability
+      threePointChance *= 1.20;
+    } else if (shooter.position == 'SF') {
+      // Small forwards balance 2PT and 3PT attempts (slight reduction)
+      threePointChance *= 0.95;
+    }
+    
     return _random.nextInt(100) < threePointChance;
   }
 
@@ -238,7 +248,12 @@ class PossessionSimulation {
     if (assister == null) return;
 
     // Base 50% assist chance + (passing/100 * 20%)
-    final assistChance = 50 + (assister.passing / 100 * 20);
+    double assistChance = 50 + (assister.passing / 100 * 20);
+    
+    // Position-based modifier: Point guards get +15% to assist probability
+    if (assister.position == 'PG') {
+      assistChance *= 1.15;
+    }
 
     if (_random.nextInt(100) < assistChance) {
       _statsTracker[assister.id]!.assists++;
@@ -273,18 +288,31 @@ class PossessionSimulation {
     _statsTracker[rebounder.id]!.rebounds++;
   }
 
-  /// Select rebounder weighted by rebounding attribute
+  /// Calculate position-based rebound modifier
+  double _getPositionReboundModifier(Player player) {
+    switch (player.position) {
+      case 'PF':
+        return 1.15; // +15% for power forwards
+      case 'C':
+        return 1.25; // +25% for centers
+      default:
+        return 1.0; // No modifier for other positions
+    }
+  }
+
+  /// Select rebounder weighted by rebounding attribute and position
   Player _selectRebounder(List<Player> lineup) {
-    final totalRebounding = lineup.fold<int>(
-      0,
-      (sum, player) => sum + player.rebounding,
+    // Calculate total rebounding weight with position modifiers
+    final totalRebounding = lineup.fold<double>(
+      0.0,
+      (sum, player) => sum + (player.rebounding * _getPositionReboundModifier(player)),
     );
 
-    final randomValue = _random.nextInt(totalRebounding);
-    int currentWeight = 0;
+    final randomValue = _random.nextDouble() * totalRebounding;
+    double currentWeight = 0.0;
 
     for (final player in lineup) {
-      currentWeight += player.rebounding;
+      currentWeight += player.rebounding * _getPositionReboundModifier(player);
       if (randomValue < currentWeight) {
         return player;
       }
@@ -341,26 +369,51 @@ class PossessionSimulation {
     // Three-pointers are harder to block
     if (isThreePoint) {
       // Very low block chance for 3PT shots
-      final blockChance = 2.0;
-      if (_random.nextInt(100) >= blockChance) {
+      final threePointBlockChance = 2.0;
+      if (_random.nextInt(100) >= threePointBlockChance) {
         return null;
       }
     }
 
-    // Select a defender weighted by defense attribute
-    final defender = _selectDefender(defenders);
+    // Select a defender weighted by blocks attribute
+    final defender = _selectBlocker(defenders);
 
-    // Base 6% block chance + (defense/100 * 4%)
-    // Defense attribute is primary factor for blocks
-    final blockChance = 6 + (defender.defense / 100 * 4);
+    // Base 6% block chance + (blocks/100 * 8%)
+    // Blocks attribute is primary factor for blocking shots
+    double blockChance = 6 + (defender.blocks / 100 * 8);
+    
+    // Position-based modifier: Centers get +20% to block probability
+    if (defender.position == 'C') {
+      blockChance *= 1.20;
+    }
 
-    final clampedChance = blockChance.clamp(3.0, 12.0);
+    final clampedChance = blockChance.clamp(3.0, 18.0);
 
     if (_random.nextInt(100) < clampedChance) {
       return defender;
     }
 
     return null;
+  }
+
+  /// Select a blocker weighted by blocks attribute
+  Player _selectBlocker(List<Player> defenders) {
+    final totalBlocks = defenders.fold<int>(
+      0,
+      (sum, player) => sum + player.blocks,
+    );
+
+    final randomValue = _random.nextInt(totalBlocks);
+    int currentWeight = 0;
+
+    for (final player in defenders) {
+      currentWeight += player.blocks;
+      if (randomValue < currentWeight) {
+        return player;
+      }
+    }
+
+    return defenders.first;
   }
 
   /// Select a defender weighted by defense attribute

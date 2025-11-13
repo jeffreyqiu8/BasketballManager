@@ -256,3 +256,141 @@
   - Update sortable columns to include new statistics
   - Update accessible labels for new stat columns
   - Test sorting functionality with new statistics
+
+- [x] 19. Add blocks and steals attributes to Player model
+
+
+
+
+
+  - Add blocks field (0-100) to Player model
+  - Add steals field (0-100) to Player model
+  - Update Player JSON serialization to include blocks and steals
+  - Update Player.fromJson to handle blocks and steals
+  - Handle backward compatibility for saves without blocks/steals attributes (default to reasonable values)
+  - _Requirements: 11.1, 11.2, 11.5_
+
+- [x] 20. Add position role to Player model
+
+
+
+
+
+  - Add position field to Player model (String: 'PG', 'SG', 'SF', 'PF', 'C')
+  - Update Player JSON serialization to include position
+  - Update Player.fromJson to handle position
+  - Add copyWithPosition method to Player model
+  - Handle backward compatibility for saves without position (assign based on attributes)
+  - _Requirements: 13.1, 13.2, 13.3_
+
+- [x] 21. Implement position affinity calculation system
+
+
+
+
+
+  - Create PositionAffinity utility class in utils/
+  - Implement calculatePGAffinity method (weights: passing 40%, ballHandling 30%, speed 20%, height penalty)
+  - Implement calculateSGAffinity method (weights: shooting 35%, threePoint 35%, speed 20%, height bonus for 73-78")
+  - Implement calculateSFAffinity method (weights: shooting 25%, defense 25%, athleticism 25%, height bonus for 76-80")
+  - Implement calculatePFAffinity method (weights: rebounding 35%, defense 25%, shooting 20%, height bonus)
+  - Implement calculateCAffinity method (weights: rebounding 35%, blocks 30%, defense 25%, height bonus)
+  - Add getPositionAffinities method to Player model that returns Map<String, double>
+  - Ensure all affinity scores are clamped to 0-100 range
+  - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8_
+
+- [x] 22. Update player generation with height-based attribute modifiers
+
+
+
+
+
+
+
+
+
+
+  - Modify player generation to apply height-based modifiers after base attribute generation
+  - For players 80"+ (tall): increase rebounding +15, blocks +20, decrease steals -8, shooting -5, speed -10
+  - For players 72" and under (short): increase steals +20, shooting +15, speed +10, decrease rebounding -10, blocks -15
+  - Ensure all modified attributes are clamped to 0-100 range
+  - Assign initial position based on highest affinity score
+  - Test that generated players have realistic attribute distributions for their height
+  - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5_
+
+- [ ] 23. Update possession simulation with position-based modifiers
+
+
+
+
+
+
+
+
+
+
+  - Modify assist probability calculation to add +15% for PG position
+  - Modify three-point attempt probability to add +20% for SG position
+  - Modify shot selection for SF position to balance 2PT and 3PT attempts
+  - Modify rebound probability to add +15% for PF position
+  - Modify rebound probability to add +25% for C position
+  - Modify block probability to add +20% for C position
+  - Ensure position modifiers stack multiplicatively with attribute-based probabilities
+  - Test that position assignments meaningfully affect game statistics
+  - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 11.3, 11.4_
+
+- [ ] 24. Create position assignment UI on TeamPage
+
+
+
+
+
+  - Add position display to player roster view
+  - Create position affinity visualization widget (progress bars for each position)
+  - Implement position selector dropdown with affinity percentages
+  - Add color-coding for affinity levels (green 80+, yellow 60-79, red <60)
+  - Implement position change handler that updates player and saves
+  - Add accessible labels for position selector and affinity displays
+  - Show visual indicator for player's best-fit position
+  - _Requirements: 13.4, 13.5, 14.8_
+
+- [x] 25. Update TeamPage to show position-based roster organization
+
+
+
+
+
+  - Add option to view roster sorted by position (PG, SG, SF, PF, C)
+  - Display starting lineup with position labels
+  - Show position distribution summary (e.g., "2 PGs, 3 SGs, 4 SFs, 3 PFs, 3 Cs")
+  - Add filter to view players by specific position
+  - Ensure position information is visible in season stats view
+  - _Requirements: 13.4_
+
+- [x] 26. Test and validate position system end-to-end
+
+
+
+
+
+  - Generate multiple players and verify height-based attribute modifiers work correctly
+  - Verify position affinities are calculated correctly for various player types
+  - Test position assignment and verify it persists across save/load
+  - Play multiple games and verify position modifiers affect statistics appropriately
+  - Verify UI displays position information and affinity scores correctly
+  - Test changing player positions and verify gameplay impact
+  - Ensure backward compatibility with existing saves
+  - _Requirements: 11.5, 12.5, 13.3, 13.5, 14.8, 15.6_
+
+- [x] 27. Expand player name generation lists
+
+
+
+
+
+  - Expand first names list from 50 to at least 200 unique names
+  - Expand last names list from 50 to at least 200 unique names
+  - Include diverse basketball player names from various eras and backgrounds
+  - Test that name generation produces minimal duplicates across multiple team rosters
+  - Verify name combinations create realistic player names
+  - _Requirements: 9.3_

@@ -36,12 +36,13 @@ class Team {
   }
 
   /// Calculate team rating based on starting lineup
+  /// Uses position-adjusted ratings for more accurate team strength
   int get teamRating {
     if (startingLineup.isEmpty) return 0;
 
     final totalRating = startingLineup.fold<int>(
       0,
-      (sum, player) => sum + player.overallRating,
+      (sum, player) => sum + player.positionAdjustedRating,
     );
 
     return (totalRating / startingLineup.length).round();

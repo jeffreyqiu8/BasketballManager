@@ -813,7 +813,7 @@ class _TeamSelectionDialogState extends State<_TeamSelectionDialog> {
                           final isSelected = _selectedTeamId == team.id;
                           
                           return Semantics(
-                            label: 'Select ${team.city} ${team.name}, rating ${team.teamRating}',
+                            label: 'Select ${team.city} ${team.name}, overall rating ${team.teamRating}',
                             button: true,
                             selected: isSelected,
                             child: Card(
@@ -838,7 +838,7 @@ class _TeamSelectionDialogState extends State<_TeamSelectionDialog> {
                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
-                                subtitle: Text('Rating: ${team.teamRating}'),
+                                subtitle: Text('Overall: ${team.teamRating}'),
                                 trailing: isSelected
                                     ? Icon(
                                         Icons.check_circle,

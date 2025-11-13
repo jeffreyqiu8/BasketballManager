@@ -31,6 +31,9 @@ void main() {
         rebounding: 70,
         ballHandling: 75,
         threePoint: 80,
+        blocks: 70,
+        steals: 75,
+        position: 'PG',
       );
 
       final team = Team(
@@ -92,6 +95,9 @@ void main() {
         rebounding: 70,
         ballHandling: 75,
         threePoint: 80,
+        blocks: 70,
+        steals: 75,
+        position: 'PG',
       );
 
       final team = Team(
@@ -148,6 +154,9 @@ void main() {
         rebounding: 70,
         ballHandling: 75,
         threePoint: 80,
+        blocks: 70,
+        steals: 75,
+        position: 'PG',
       );
 
       final team = Team(
@@ -216,6 +225,9 @@ void main() {
         rebounding: 70,
         ballHandling: 75,
         threePoint: 80,
+        blocks: 70,
+        steals: 75,
+        position: 'PG',
       );
 
       final team = Team(
@@ -271,6 +283,9 @@ void main() {
         rebounding: 70,
         ballHandling: 75,
         threePoint: 80,
+        blocks: 70,
+        steals: 75,
+        position: 'PG',
       );
 
       final team = Team(

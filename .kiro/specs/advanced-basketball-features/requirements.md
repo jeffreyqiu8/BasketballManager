@@ -16,6 +16,10 @@ This document outlines the requirements for advanced features in the basketball 
 - **Player Attributes**: The 8 inherent abilities of a player (shooting, defense, speed, stamina, passing, rebounding, ball handling, three-point)
 - **Box Score**: The statistical summary of a player's performance in a game
 - **Season Statistics**: Cumulative player statistics across all games in a season
+- **Position Role**: One of five basketball positions (PG, SG, SF, PF, C) that defines a player's primary role on the team
+- **Position Affinity**: A calculated score (0-100) indicating how well-suited a player is for a specific position based on their attributes and height
+- **Blocks Attribute**: A player's ability to block opponent shots (0-100)
+- **Steals Attribute**: A player's ability to steal the ball from opponents (0-100)
 
 ## Requirements
 
@@ -138,3 +142,67 @@ This document outlines the requirements for advanced features in the basketball 
 3. THE Application SHALL support screen reader navigation for team selection and statistics displays
 4. THE Application SHALL provide keyboard navigation for team selection
 5. THE Application SHALL announce statistical updates accessibly after game completion
+
+### Requirement 11
+
+**User Story:** As a User, I want players to have block and steal attributes, so that defensive abilities are more detailed and realistic.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL add a blocks attribute (0-100) to the Player model
+2. THE Application SHALL add a steals attribute (0-100) to the Player model
+3. THE Application SHALL use the blocks attribute to calculate block probability during possession simulation
+4. THE Application SHALL use the steals attribute to calculate steal probability during possession simulation
+5. THE Application SHALL persist blocks and steals attributes in save files
+
+### Requirement 12
+
+**User Story:** As a User, I want player generation to consider height when assigning attributes, so that taller players naturally excel at blocking and rebounding while shorter players excel at steals and shooting.
+
+#### Acceptance Criteria
+
+1. WHEN generating a player with height above 78 inches, THE Application SHALL increase rebounding and blocks attributes by 10-20 points
+2. WHEN generating a player with height above 78 inches, THE Application SHALL decrease steals and shooting attributes by 5-10 points
+3. WHEN generating a player with height below 74 inches, THE Application SHALL increase steals and shooting attributes by 10-20 points
+4. WHEN generating a player with height below 74 inches, THE Application SHALL decrease rebounding and blocks attributes by 5-10 points
+5. THE Application SHALL ensure all attribute adjustments keep values within 0-100 range
+
+### Requirement 13
+
+**User Story:** As a User, I want each player to have a position role (PG, SG, SF, PF, C), so that I can organize my team by traditional basketball positions.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL define five position roles: PG (Point Guard), SG (Shooting Guard), SF (Small Forward), PF (Power Forward), C (Center)
+2. THE Application SHALL assign each player a primary position during generation
+3. THE Application SHALL persist player positions in save files
+4. THE Application SHALL display player positions on the team roster screen
+5. THE Application SHALL allow the User to view and change player positions on the team screen
+
+### Requirement 14
+
+**User Story:** As a User, I want to see each player's affinity for each position role, so that I can make informed decisions about position assignments.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL calculate position affinity scores (0-100) for all five positions for each player
+2. WHEN calculating PG affinity, THE Application SHALL weight passing, ballHandling, and speed attributes most heavily
+3. WHEN calculating SG affinity, THE Application SHALL weight shooting, threePoint, and speed attributes most heavily
+4. WHEN calculating SF affinity, THE Application SHALL weight shooting, defense, and athleticism (speed + stamina) attributes most heavily
+5. WHEN calculating PF affinity, THE Application SHALL weight rebounding, defense, and shooting attributes most heavily
+6. WHEN calculating C affinity, THE Application SHALL weight rebounding, blocks, and defense attributes most heavily
+7. THE Application SHALL consider player height when calculating position affinities (shorter players favor guard positions, taller players favor forward/center positions)
+8. THE Application SHALL display affinity scores for all positions on the team screen
+
+### Requirement 15
+
+**User Story:** As a User, I want player positions to affect their statistical outcomes during games, so that position assignments have meaningful gameplay impact.
+
+#### Acceptance Criteria
+
+1. WHEN a player is assigned to PG position, THE Application SHALL increase their probability of recording assists by 15%
+2. WHEN a player is assigned to SG position, THE Application SHALL increase their probability of attempting three-point shots by 20%
+3. WHEN a player is assigned to SF position, THE Application SHALL balance their shot attempts between two-point and three-point shots
+4. WHEN a player is assigned to PF position, THE Application SHALL increase their probability of attempting rebounds by 15%
+5. WHEN a player is assigned to C position, THE Application SHALL increase their probability of attempting rebounds by 25% and blocks by 20%
+6. THE Application SHALL ensure position modifiers stack with player attributes to determine final probabilities

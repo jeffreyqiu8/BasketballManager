@@ -379,6 +379,216 @@ Game simulated with possession system
 - Team selection can be extended to difficulty ratings
 - Box score can include quarter-by-quarter breakdown
 
+## Player Position System
+
+### Position Roles
+
+Five traditional basketball positions with distinct gameplay characteristics:
+
+| Position | Abbreviation | Primary Attributes | Height Range |
+|----------|-------------|-------------------|--------------|
+| Point Guard | PG | Passing, Ball Handling, Speed | 70-76" |
+| Shooting Guard | SG | Shooting, Three-Point, Speed | 73-78" |
+| Small Forward | SF | Shooting, Defense, Speed+Stamina | 76-80" |
+| Power Forward | PF | Rebounding, Defense, Shooting | 78-82" |
+| Center | C | Rebounding, Blocks, Defense | 80-86" |
+
+### Position Affinity Calculation
+
+Each player has an affinity score (0-100) for each position calculated as:
+
+```dart
+class PositionAffinity {
+  static double calculatePGAffinity(Player player) {
+    // Weight: passing (40%), ballHandling (30%), speed (20%), height penalty (10%)
+    double baseScore = (player.passing * 0.4) + 
+                       (player.ballHandling * 0.3) + 
+                       (player.speed * 0.2);
+    double heightPenalty = (player.heightInches - 72) * 0.5; // Penalty for being tall
+    return (baseScore - heightPenalty).clamp(0, 100);
+  }
+  
+  static double calculateSGAffinity(Player player) {
+    // Weight: shooting (35%), threePoint (35%), speed (20%), height factor (10%)
+    double baseScore = (player.shooting * 0.35) + 
+                       (player.threePoint * 0.35) + 
+                       (player.speed * 0.2);
+    double heightBonus = (player.heightInches >= 73 && player.heightInches <= 78) ? 10 : 0;
+    return (baseScore + heightBonus).clamp(0, 100);
+  }
+  
+  static double calculateSFAffinity(Player player) {
+    // Weight: shooting (25%), defense (25%), athleticism (25%), balanced height (25%)
+    double athleticism = (player.speed + player.stamina) / 2;
+    double baseScore = (player.shooting * 0.25) + 
+                       (player.defense * 0.25) + 
+                       (athleticism * 0.25);
+    double heightBonus = (player.heightInches >= 76 && player.heightInches <= 80) ? 25 : 0;
+    return (baseScore + heightBonus).clamp(0, 100);
+  }
+  
+  static double calculatePFAffinity(Player player) {
+    // Weight: rebounding (35%), defense (25%), shooting (20%), height bonus (20%)
+    double baseScore = (player.rebounding * 0.35) + 
+                       (player.defense * 0.25) + 
+                       (player.shooting * 0.2);
+    double heightBonus = (player.heightInches - 76) * 1.0; // Bonus for being tall
+    return (baseScore + heightBonus).clamp(0, 100);
+  }
+  
+  static double calculateCAffinity(Player player) {
+    // Weight: rebounding (35%), blocks (30%), defense (25%), height bonus (10%)
+    double baseScore = (player.rebounding * 0.35) + 
+                       (player.blocks * 0.3) + 
+                       (player.defense * 0.25);
+    double heightBonus = (player.heightInches - 78) * 1.5; // Strong bonus for being tall
+    return (baseScore + heightBonus).clamp(0, 100);
+  }
+}
+```
+
+### Player Model Extensions
+
+```dart
+class Player {
+  // Existing fields...
+  final int blocks; // New: 0-100 blocking ability
+  final int steals; // New: 0-100 stealing ability
+  final String position; // New: 'PG', 'SG', 'SF', 'PF', or 'C'
+  
+  // New methods
+  Map<String, double> getPositionAffinities();
+  Player copyWithPosition(String newPosition);
+}
+```
+
+### Height-Based Player Generation
+
+When generating players, attributes are adjusted based on height:
+
+```dart
+class PlayerGenerator {
+  Player generatePlayer() {
+    // Generate base height first
+    int height = _generateHeight();
+    
+    // Generate base attributes
+    Map<String, int> baseAttributes = _generateBaseAttributes();
+    
+    // Apply height modifiers
+    if (height >= 80) { // Tall players (6'8"+)
+      baseAttributes['rebounding'] += 15;
+      baseAttributes['blocks'] += 20;
+      baseAttributes['steals'] -= 8;
+      baseAttributes['shooting'] -= 5;
+      baseAttributes['speed'] -= 10;
+    } else if (height <= 72) { // Short players (6'0" and under)
+      baseAttributes['steals'] += 20;
+      baseAttributes['shooting'] += 15;
+      baseAttributes['speed'] += 10;
+      baseAttributes['rebounding'] -= 10;
+      baseAttributes['blocks'] -= 15;
+    }
+    
+    // Clamp all attributes to 0-100
+    baseAttributes.forEach((key, value) {
+      baseAttributes[key] = value.clamp(0, 100);
+    });
+    
+    // Assign best-fit position based on affinities
+    String position = _assignBestPosition(height, baseAttributes);
+    
+    return Player(..., position: position);
+  }
+}
+```
+
+### Position Impact on Gameplay
+
+During possession simulation, position modifiers affect probabilities:
+
+```dart
+class PossessionSimulation {
+  double _getAssistProbability(Player player) {
+    double base = 0.5 + (player.passing / 100 * 0.2);
+    if (player.position == 'PG') base *= 1.15; // +15% for point guards
+    return base;
+  }
+  
+  double _getThreePointAttemptProbability(Player player) {
+    double base = player.threePoint / 100 * 0.4;
+    if (player.position == 'SG') base *= 1.20; // +20% for shooting guards
+    return base;
+  }
+  
+  double _getReboundProbability(Player player, bool isOffensive) {
+    double base = 0.25 + (player.rebounding / 100 * 0.15);
+    if (player.position == 'PF') base *= 1.15; // +15% for power forwards
+    if (player.position == 'C') base *= 1.25; // +25% for centers
+    return base;
+  }
+  
+  double _getBlockProbability(Player player) {
+    double base = player.blocks / 100 * 0.15;
+    if (player.position == 'C') base *= 1.20; // +20% for centers
+    return base;
+  }
+}
+```
+
+### UI Components for Position Management
+
+#### TeamPage Position Assignment
+```dart
+// New position assignment UI on team page
+Widget _buildPositionAssignment(Player player) {
+  return Column(
+    children: [
+      // Current position display
+      Text('Current Position: ${player.position}'),
+      
+      // Position affinity display
+      _buildAffinityBars(player.getPositionAffinities()),
+      
+      // Position selector dropdown
+      DropdownButton<String>(
+        value: player.position,
+        items: ['PG', 'SG', 'SF', 'PF', 'C'].map((pos) {
+          return DropdownMenuItem(
+            value: pos,
+            child: Text('$pos (${player.getPositionAffinities()[pos]}% fit)'),
+          );
+        }).toList(),
+        onChanged: (newPosition) => _updatePlayerPosition(player, newPosition),
+      ),
+    ],
+  );
+}
+
+Widget _buildAffinityBars(Map<String, double> affinities) {
+  return Column(
+    children: affinities.entries.map((entry) {
+      return Row(
+        children: [
+          Text('${entry.key}:'),
+          LinearProgressIndicator(
+            value: entry.value / 100,
+            color: _getAffinityColor(entry.value),
+          ),
+          Text('${entry.value.toStringAsFixed(0)}%'),
+        ],
+      );
+    }).toList(),
+  );
+}
+
+Color _getAffinityColor(double affinity) {
+  if (affinity >= 80) return Colors.green;
+  if (affinity >= 60) return Colors.yellow;
+  return Colors.red;
+}
+```
+
 ## Dependencies
 
 **No new dependencies required** - all features use existing packages:

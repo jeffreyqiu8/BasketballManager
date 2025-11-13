@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../services/player_generator.dart';
+import '../widgets/star_rating.dart';
 
 /// Demo page to display randomly generated players
 /// Shows all 8 stats for each player with accessibility support
@@ -57,8 +58,8 @@ class _PlayerGeneratorDemoPageState extends State<PlayerGeneratorDemoPage> {
               label:
                   'Player ${index + 1} of ${_players.length}: ${player.name}, '
                   '${player.heightFormatted}, '
-                  'Overall rating ${player.overallRating}',
-              child: _PlayerCard(player: player, index: index),
+                  'overall rating ${player.positionAdjustedRating}',
+              child: _PlayerCard(player: player, index: index, allPlayers: _players),
             );
           },
         ),
@@ -71,8 +72,13 @@ class _PlayerGeneratorDemoPageState extends State<PlayerGeneratorDemoPage> {
 class _PlayerCard extends StatelessWidget {
   final Player player;
   final int index;
+  final List<Player> allPlayers;
 
-  const _PlayerCard({required this.player, required this.index});
+  const _PlayerCard({
+    required this.player,
+    required this.index,
+    required this.allPlayers,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -110,26 +116,27 @@ class _PlayerCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getRatingColor(player.overallRating),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Semantics(
-                    label: 'Overall rating ${player.overallRating}',
-                    child: Text(
-                      'OVR ${player.overallRating}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Semantics(
+                      label: '${player.getStarRatingRounded(allPlayers)} stars',
+                      child: StarRating(
+                        rating: player.getStarRatingRounded(allPlayers),
+                        size: 20,
+                        showLabel: true,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'OVR ${player.positionAdjustedRating}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -215,13 +222,6 @@ class _PlayerCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color _getRatingColor(int rating) {
-    if (rating >= 80) return Colors.green[700]!;
-    if (rating >= 70) return Colors.blue[700]!;
-    if (rating >= 60) return Colors.orange[700]!;
-    return Colors.red[700]!;
   }
 
   Color _getStatColor(int stat) {

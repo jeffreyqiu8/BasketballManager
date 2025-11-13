@@ -309,6 +309,9 @@ void main() {
         rebounding: 10,
         ballHandling: 10,
         threePoint: 10,
+        blocks: 10,
+        steals: 10,
+        position: 'PG',
       );
       
       final validPlayer = Player(
@@ -323,6 +326,9 @@ void main() {
         rebounding: 70,
         ballHandling: 75,
         threePoint: 80,
+        blocks: 70,
+        steals: 75,
+        position: 'SG',
       );
       
       final players = [

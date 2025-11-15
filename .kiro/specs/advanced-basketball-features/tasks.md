@@ -394,3 +394,430 @@
   - Test that name generation produces minimal duplicates across multiple team rosters
   - Verify name combinations create realistic player names
   - _Requirements: 9.3_
+
+- [x] 28. Create player profile page with detailed statistics and information
+
+
+
+
+
+
+
+
+
+
+  - Create PlayerProfilePage widget in views/
+  - Display player header with name, position, height, and overall rating
+  - Show all 10 player attributes with visual bars (shooting, defense, speed, postShooting, passing, rebounding, ballHandling, threePoint, blocks, steals)
+  - Display position affinity scores for all 5 positions with visual indicators
+  - Show season statistics if available (PPG, RPG, APG, FG%, 3PT%, FT%, etc.)
+  - Display recent game logs (last 5-10 games with stats)
+  - Add star rating display relative to team
+  - Make player names clickable in TeamPage roster view to navigate to profile
+  - Make player names clickable in box score to navigate to profile
+  - Add accessible navigation and semantic labels throughout profile page
+  - Implement back navigation to return to previous page
+  - Add responsive layout for different screen sizes
+  - _Requirements: 5.4, 6.5, 10.1, 10.2, 13.4, 14.8_
+
+- [x] 29. Create RoleArchetype model and registry system
+
+
+
+
+
+
+
+
+
+  - Create RoleArchetype class in models/ with id, name, position, attributeWeights, and gameplayModifiers
+  - Implement calculateFitScore method that weights player attributes
+  - Create RoleArchetypeRegistry class in utils/ to manage all role archetypes
+  - Define all 4 Point Guard archetypes (All-Around PG, Floor General, Slashing Playmaker, Offensive Point)
+  - Define all 3 Shooting Guard archetypes (Three-Level Scorer, 3-and-D, Microwave Shooter)
+  - Define all 3 Small Forward archetypes (Point Forward, 3-and-D Wing, Athletic Finisher)
+  - Define all 3 Power Forward archetypes (Playmaking Big, Stretch Four, Rim Runner)
+  - Define all 3 Center archetypes (Paint Beast, Stretch Five, Standard Center)
+  - Implement getArchetypesForPosition method to retrieve archetypes by position
+  - Implement getArchetypeById method to retrieve specific archetype
+  - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 17.1-17.17_
+
+- [x] 30. Extend Player model with role archetype support
+
+
+
+
+
+
+
+
+
+
+
+
+
+  - Add optional roleArchetypeId field to Player model
+  - Implement getRoleArchetype method that returns RoleArchetype from registry
+  - Implement getRoleFitScores method that calculates fit for all position archetypes
+  - Implement copyWithRoleArchetype method for updating player role
+  - Update Player JSON serialization to include roleArchetypeId
+  - Update Player.fromJson to handle roleArchetypeId with backward compatibility
+  - _Requirements: 16.7, 18.1, 18.2_
+
+- [x] 31. Update possession simulation with role archetype modifiers
+
+
+
+
+
+
+
+
+
+  - Create _getModifiedProbability helper method that applies position and role modifiers
+  - Update assist probability calculation to apply role modifiers
+  - Update shot attempt probability calculation to apply role modifiers
+  - Update three-point attempt probability calculation to apply role modifiers
+  - Update post shooting attempt probability calculation to apply role modifiers
+  - Update catch-and-shoot probability calculation to apply role modifiers
+  - Update steal probability calculation to apply role modifiers
+  - Update block probability calculation to apply role modifiers
+  - Update rebound probability calculation to apply role modifiers
+  - Ensure role modifiers stack multiplicatively with position and attribute modifiers
+  - Test that different role assignments produce different statistical outcomes
+  - _Requirements: 20.1-20.16_
+
+- [x] 32. Create role selector UI component for TeamPage
+
+
+
+
+
+
+
+
+
+  - Create _buildRoleSelector widget that displays current role and dropdown
+  - Display all available role archetypes for player's position in dropdown
+  - Show fit score percentage next to each role option
+  - Add color-coded fit indicator (green 80+, yellow 60-79, red <60)
+  - Display key attributes for currently selected role
+  - Implement _updatePlayerRole handler that saves role change
+  - Add accessible labels for role selector
+  - Integrate role selector into existing player roster view on TeamPage
+  - _Requirements: 19.1, 19.2, 19.3, 19.4, 19.5_
+
+- [x] 33. Create role fit analysis section for PlayerProfilePage
+
+
+
+
+
+
+
+
+
+  - Create _buildRoleFitSection widget that displays all role archetypes
+  - Show fit score circle for each role with color coding
+  - Display top 3 key attributes as chips for each role
+  - Highlight currently assigned role with visual indicator
+  - Make role cards tappable to show detailed role information
+  - Create _showRoleDetails dialog with full attribute breakdown and gameplay modifiers
+  - Add "Assign Role" button in role details dialog
+  - Ensure role fit section is accessible with semantic labels
+  - _Requirements: 18.3, 18.4, 18.5, 18.6_
+
+- [x] 34. Add role archetype display to team roster view
+
+
+
+
+
+
+
+
+
+
+
+
+  - Display current role archetype name next to player position on roster
+  - Add visual badge or icon for role archetype
+  - Show abbreviated role name if space is limited
+  - Update roster sorting to optionally group by role archetype
+  - Add filter to view players by specific role archetype
+  - Ensure role information is visible in both roster and season stats views
+  - _Requirements: 19.1_
+
+- [x] 35. Test and validate role archetype system end-to-end
+
+
+
+
+
+
+
+
+
+  - Assign different role archetypes to players and verify persistence across save/load
+  - Play multiple games with different role assignments and verify statistical differences
+  - Verify fit scores accurately reflect player attributes
+  - Test role selector UI on TeamPage with all positions
+  - Test role fit analysis on PlayerProfilePage with various player types
+  - Verify role modifiers stack correctly with position and attribute modifiers
+  - Test backward compatibility with saves that don't have role assignments
+  - Verify UI displays "No role assigned" for players without roles
+  - Test that role changes immediately affect next game simulation
+  - _Requirements: 16.7, 16.8, 18.1-18.6, 19.1-19.5, 20.16_
+
+- [x] 36. Create post-season data models
+
+
+
+
+
+
+
+
+
+  - Create PlayoffSeries model in models/ with id, homeTeamId, awayTeamId, homeWins, awayWins, round, conference, gameIds, isComplete
+  - Implement winnerId getter and seriesScore getter in PlayoffSeries
+  - Implement copyWithGameResult method to update series after each game
+  - Implement JSON serialization for PlayoffSeries
+  - Create PlayoffBracket model with seasonId, teamSeedings, teamConferences, playInGames, firstRound, conferenceSemis, conferenceFinals, nbaFinals, currentRound
+  - Implement getCurrentRoundSeries, getUserTeamSeries, and isRoundComplete methods in PlayoffBracket
+  - Implement JSON serialization for PlayoffBracket
+  - Create PlayerPlayoffStats model with same structure as PlayerSeasonStats
+  - Implement JSON serialization for PlayerPlayoffStats
+  - _Requirements: 21.1, 23.1, 23.2, 23.3, 23.4, 23.5, 26.1, 26.2, 26.4_
+
+- [ ] 37. Extend Season model for post-season support
+
+
+
+
+  - Add optional playoffBracket field to Season model
+  - Add optional playoffStats field (Map<String, PlayerPlayoffStats>) to Season model
+  - Add isPostSeason boolean field to Season model
+  - Implement startPostSeason method that initializes playoff bracket
+  - Implement updatePlayoffStats method to accumulate playoff statistics
+  - Implement getPlayerPlayoffStats method
+  - Update Season JSON serialization to include playoff fields
+  - Handle backward compatibility for saves without playoff data
+  - _Requirements: 21.1, 26.1, 26.4, 26.5_
+
+- [ ] 38. Implement playoff seeding algorithm
+
+
+
+
+  - Create PlayoffSeeding utility class in utils/
+  - Implement calculateSeedings method that computes win-loss records for all teams
+  - Separate teams into Eastern and Western conferences (15 teams each)
+  - Sort teams by wins within each conference
+  - Assign seeds 1-15 to teams in each conference
+  - Create helper method to determine team conference based on city
+  - Return Map<String, int> with teamId to seed mapping
+  - _Requirements: 21.2, 21.3, 21.4_
+
+- [ ] 39. Implement play-in tournament generation
+
+
+
+
+  - Create PlayoffBracketGenerator utility class in utils/
+  - Implement generatePlayInGames method that creates 4 play-in series (2 per conference)
+  - Create 7 vs 8 seed matchup for Eastern Conference
+  - Create 9 vs 10 seed matchup for Eastern Conference
+  - Create 7 vs 8 seed matchup for Western Conference
+  - Create 9 vs 10 seed matchup for Western Conference
+  - Return List<PlayoffSeries> with all play-in games
+  - _Requirements: 22.1, 22.2, 22.3_
+
+- [ ] 40. Implement playoff bracket generation and round progression
+
+
+
+
+  - Implement generateFirstRoundSeries method that creates 1v8, 2v7, 3v6, 4v5 matchups per conference
+  - Implement resolvePlayIn method that determines seeds 7 and 8 from play-in results
+  - Create second play-in game between loser of 7v8 and winner of 9v10
+  - Implement generateConferenceSemis method that matches first round winners
+  - Implement generateConferenceFinals method that matches conference semi winners
+  - Implement generateNBAFinals method that matches conference champions
+  - Create PlayoffService class in services/ to manage round progression
+  - Implement advancePlayoffRound method that checks completion and generates next round
+  - _Requirements: 22.4, 22.5, 22.6, 22.7, 24.1, 24.2, 24.3, 24.4_
+
+- [ ] 41. Implement playoff game simulation
+
+
+
+
+  - Add simulatePlayoffGame method to GameService
+  - Use existing simulateGameDetailed for possession simulation
+  - Mark game as playoff game with seriesId reference
+  - Update PlayoffSeries with game result (increment homeWins or awayWins)
+  - Check if series is complete (team reaches 4 wins)
+  - Update playoff statistics for all players in the game
+  - Return Game object with playoff metadata
+  - _Requirements: 23.1, 23.2, 23.3, 23.4, 27.1_
+
+- [ ] 42. Implement season completion detection and post-season trigger
+
+
+
+
+  - Add isRegularSeasonComplete method to LeagueService
+  - Check if 82 games have been played (1230 total games across league)
+  - Implement checkAndStartPostSeason method called after each game
+  - When regular season completes, call Season.startPostSeason with all teams
+  - Generate playoff seedings using PlayoffSeeding utility
+  - Generate play-in games using PlayoffBracketGenerator
+  - Set Season.isPostSeason to true
+  - Save updated season state
+  - _Requirements: 21.1, 21.2, 21.5_
+
+- [ ] 43. Create PlayoffBracketPage UI
+
+
+
+
+  - Create PlayoffBracketPage widget in views/
+  - Display current playoff round name in app bar
+  - Implement _buildBracketVisualization with three columns (East, Finals, West)
+  - Create _buildConferenceBracket that shows all rounds for one conference
+  - Create _buildSeriesCard that displays team matchup with wins
+  - Highlight user's team series with colored background
+  - Show series score (e.g., "3-2") for ongoing series
+  - Display winner for completed series
+  - Add accessible labels for all bracket elements
+  - Implement navigation to PlayoffBracketPage from HomePage
+  - _Requirements: 25.1, 25.2, 25.3, 25.4, 25.5_
+
+- [ ] 44. Update HomePage for post-season mode
+
+
+
+
+  - Add conditional rendering based on Season.isPostSeason
+  - Display current playoff round name prominently
+  - Show user's current series score if team is in playoffs
+  - Add "Play Next Playoff Game" button when user's team has next game
+  - Show "View Playoff Bracket" button
+  - Display "Team Eliminated" message if user's team is out
+  - Show championship celebration when user wins NBA Finals
+  - Add "Start New Season" button after playoffs complete
+  - Update UI to distinguish playoff games from regular season
+  - _Requirements: 24.5, 27.1, 27.4, 27.5_
+
+- [ ] 45. Implement non-user playoff game simulation
+
+
+
+
+  - Create simulateNonUserPlayoffGames method in PlayoffService
+  - Simulate all games in current round for series not involving user's team
+  - Use batch simulation for performance (simulate all at once)
+  - Update all PlayoffSeries with results
+  - Check if round is complete after simulation
+  - Advance to next round if all series are complete
+  - Display summary of results to user
+  - _Requirements: 27.2, 27.3_
+
+- [ ] 46. Add playoff statistics display to PlayerProfilePage
+
+
+
+
+  - Add "Playoffs" tab to statistics section
+  - Display playoff PPG, RPG, APG, steals, blocks, turnovers
+  - Show playoff shooting percentages (FG%, 3PT%, FT%)
+  - Display games played in playoffs
+  - Show "No playoff games played" message if player hasn't played in playoffs
+  - Add comparison view between regular season and playoff stats
+  - Ensure accessible labels for playoff stats tab
+  - _Requirements: 26.2, 26.3_
+
+- [ ] 47. Update TeamPage to show playoff statistics
+
+
+
+
+  - Add playoff statistics tab alongside regular season stats
+  - Display playoff stats table with same columns as regular season
+  - Show playoff games played for each player
+  - Add sortable columns for playoff stats
+  - Display "No playoff data" message if team hasn't made playoffs
+  - Ensure playoff stats persist and load correctly
+  - _Requirements: 26.2, 26.3, 26.4_
+
+- [ ] 48. Implement playoff bracket update after each game
+
+
+
+
+  - Update PlayoffBracket after each playoff game is played
+  - Refresh bracket visualization to show updated series scores
+  - Check if current series is complete
+  - If series complete, check if entire round is complete
+  - If round complete, advance to next round automatically
+  - Display notification when advancing to next round
+  - Update HomePage to reflect new playoff state
+  - _Requirements: 25.5, 27.3_
+
+- [ ] 49. Add championship celebration and season completion
+
+
+
+
+  - Detect when NBA Finals series is complete
+  - Display championship celebration screen for winner
+  - Show championship banner with team name and year
+  - Display Finals MVP (player with best playoff stats)
+  - Show playoff statistics summary for user's team
+  - Add "Start New Season" button to begin next season
+  - Reset playoff bracket and playoff stats for new season
+  - Preserve championship history in save file
+  - _Requirements: 27.4, 27.5, 26.5_
+
+- [ ] 50. Test and validate post-season system end-to-end
+
+
+
+
+  - Play through complete regular season (82 games) and verify post-season triggers
+  - Verify playoff seeding is correct based on regular season records
+  - Test play-in tournament games and verify seeds 7-8 are determined correctly
+  - Play through all playoff rounds and verify bracket progression
+  - Test best-of-seven series logic (first to 4 wins advances)
+  - Verify playoff statistics are tracked separately from regular season
+  - Test non-user playoff games simulate correctly
+  - Verify playoff bracket displays correctly at all stages
+  - Test championship celebration when winning NBA Finals
+  - Verify backward compatibility with saves that don't have playoff data
+  - Test starting new season after playoffs complete
+  - _Requirements: 21.1-21.5, 22.1-22.7, 23.1-23.5, 24.1-24.5, 25.1-25.5, 26.1-26.5, 27.1-27.5_
+
+- [ ]* 51. Write unit tests for post-season functionality
+  - Write tests for PlayoffSeries model and series progression
+  - Write tests for PlayoffBracket model and round advancement
+  - Write tests for playoff seeding algorithm
+  - Write tests for play-in tournament resolution
+  - Write tests for playoff statistics accumulation
+  - Write tests for season completion detection
+  - _Requirements: 21.2, 22.4, 23.3, 26.1_
+
+- [ ]* 52. Write widget tests for playoff UI components
+  - Write tests for PlayoffBracketPage rendering
+  - Write tests for series card display
+  - Write tests for playoff statistics tabs
+  - Verify accessibility labels in playoff UI
+  - Test championship celebration screen
+  - _Requirements: 25.1, 25.4, 26.3_
+
+- [ ]* 53. Write integration tests for complete playoff flow
+  - Write test for complete season through playoffs to championship
+  - Write test for play-in tournament through to first round
+  - Write test for playoff statistics persistence across save/load
+  - Write test for non-user playoff game simulation
+  - _Requirements: 21.1, 27.1, 27.2, 27.3_

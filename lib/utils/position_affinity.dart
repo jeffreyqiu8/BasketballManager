@@ -28,36 +28,34 @@ class PositionAffinity {
   }
 
   /// Calculate Small Forward (SF) affinity
-  /// Weights: shooting (25%), defense (25%), athleticism (25%), height bonus for 76-80"
-  /// Athleticism is calculated as average of speed and stamina
+  /// Weights: shooting (25%), defense (25%), speed (20%), height bonus for 76-80"
   static double calculateSFAffinity(Player player) {
-    double athleticism = (player.speed + player.stamina) / 2.0;
     double baseScore = (player.shooting * 0.25) +
         (player.defense * 0.25) +
-        (athleticism * 0.25);
+        (player.speed * 0.2);
     double heightBonus =
         (player.heightInches >= 76 && player.heightInches <= 80) ? 25.0 : 0.0;
     return (baseScore + heightBonus).clamp(0.0, 100.0);
   }
 
   /// Calculate Power Forward (PF) affinity
-  /// Weights: rebounding (35%), defense (25%), shooting (20%), height bonus
+  /// Weights: rebounding (35%), defense (25%), postShooting (25%), height bonus
   /// Taller players are better suited for PF
   static double calculatePFAffinity(Player player) {
     double baseScore = (player.rebounding * 0.35) +
         (player.defense * 0.25) +
-        (player.shooting * 0.2);
+        (player.postShooting * 0.25);
     double heightBonus = (player.heightInches - 76) * 1.0;
     return (baseScore + heightBonus).clamp(0.0, 100.0);
   }
 
   /// Calculate Center (C) affinity
-  /// Weights: rebounding (35%), blocks (30%), defense (25%), height bonus
+  /// Weights: rebounding (35%), blocks (30%), postShooting (25%), height bonus
   /// Tallest players are best suited for C
   static double calculateCAffinity(Player player) {
     double baseScore = (player.rebounding * 0.35) +
         (player.blocks * 0.3) +
-        (player.defense * 0.25);
+        (player.postShooting * 0.25);
     double heightBonus = (player.heightInches - 78) * 1.5;
     return (baseScore + heightBonus).clamp(0.0, 100.0);
   }

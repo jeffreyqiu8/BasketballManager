@@ -1,4 +1,6 @@
 import '../utils/position_affinity.dart';
+import '../utils/role_archetype_registry.dart';
+import 'role_archetype.dart';
 
 /// Player model with 10 statistical attributes
 /// Represents a basketball player in the game
@@ -9,7 +11,7 @@ class Player {
   final int shooting; // 0-100: Mid-range and close-range shooting ability
   final int defense; // 0-100: Defensive capability
   final int speed; // 0-100: Movement speed and fast-break ability
-  final int stamina; // 0-100: Endurance throughout the game
+  final int postShooting; // 0-100: Post moves and close-range scoring ability
   final int passing; // 0-100: Assist and playmaking ability
   final int rebounding; // 0-100: Ability to secure rebounds
   final int ballHandling; // 0-100: Dribbling and turnover prevention
@@ -17,6 +19,7 @@ class Player {
   final int blocks; // 0-100: Shot blocking ability
   final int steals; // 0-100: Ability to steal the ball from opponents
   final String position; // Position role: 'PG', 'SG', 'SF', 'PF', 'C'
+  final String? roleArchetypeId; // Optional: ID of assigned role archetype
 
   Player({
     required this.id,
@@ -25,7 +28,7 @@ class Player {
     required this.shooting,
     required this.defense,
     required this.speed,
-    required this.stamina,
+    required this.postShooting,
     required this.passing,
     required this.rebounding,
     required this.ballHandling,
@@ -33,6 +36,7 @@ class Player {
     required this.blocks,
     required this.steals,
     required this.position,
+    this.roleArchetypeId,
   });
 
   /// Get height formatted as feet and inches (e.g., "6'2\"")
@@ -47,7 +51,7 @@ class Player {
     return ((shooting +
                 defense +
                 speed +
-                stamina +
+                postShooting +
                 passing +
                 rebounding +
                 ballHandling +
@@ -64,13 +68,13 @@ class Player {
     final baseRating = overallRating;
     final affinities = getPositionAffinities();
     final positionAffinity = affinities[position] ?? 50.0;
-    
+
     // Affinity ranges from 0-100
     // If affinity is 100 (perfect fit), add up to +10 to rating
     // If affinity is 50 (neutral), no change
     // If affinity is 0 (poor fit), subtract up to -10 from rating
     final affinityBonus = ((positionAffinity - 50) / 5).round();
-    
+
     // Clamp the result between 0 and 100
     return (baseRating + affinityBonus).clamp(0, 100);
   }
@@ -80,28 +84,28 @@ class Player {
   /// Requires list of all team players for comparison
   double getStarRating(List<Player> teamPlayers) {
     if (teamPlayers.isEmpty) return 3.0;
-    
+
     // Get all position-adjusted ratings for the team
     final ratings = teamPlayers.map((p) => p.positionAdjustedRating).toList();
     final myRating = positionAdjustedRating;
-    
+
     // Find min and max ratings on the team
     final minRating = ratings.reduce((a, b) => a < b ? a : b);
     final maxRating = ratings.reduce((a, b) => a > b ? a : b);
-    
+
     // If all players have same rating, return 3 stars
     if (maxRating == minRating) return 3.0;
-    
+
     // Normalize rating to 0-1 scale relative to team
     final normalizedRating = (myRating - minRating) / (maxRating - minRating);
-    
+
     // Map to 1-5 star scale
     // Bottom 20% of team: 1-2 stars
     // Next 20%: 2-3 stars
     // Middle 20%: 3-3.5 stars
     // Next 20%: 3.5-4.5 stars
     // Top 20%: 4.5-5 stars
-    
+
     if (normalizedRating < 0.2) {
       return 1.0 + normalizedRating * 5.0; // 1.0 to 2.0
     } else if (normalizedRating < 0.4) {
@@ -131,7 +135,7 @@ class Player {
       'shooting': shooting,
       'defense': defense,
       'speed': speed,
-      'stamina': stamina,
+      'postShooting': postShooting,
       'passing': passing,
       'rebounding': rebounding,
       'ballHandling': ballHandling,
@@ -139,20 +143,32 @@ class Player {
       'blocks': blocks,
       'steals': steals,
       'position': position,
+      'roleArchetypeId': roleArchetypeId,
     };
   }
 
   /// Create Player from JSON
-  /// Handles backward compatibility for saves without blocks/steals/position attributes
+  /// Handles backward compatibility for saves without blocks/steals/position/postShooting attributes
   factory Player.fromJson(Map<String, dynamic> json) {
     // Calculate reasonable defaults based on existing attributes if blocks/steals are missing
-    final int defaultBlocks = json['blocks'] as int? ?? 
-        ((json['defense'] as int) * 0.6 + (json['rebounding'] as int) * 0.4).round();
-    final int defaultSteals = json['steals'] as int? ?? 
+    final int defaultBlocks =
+        json['blocks'] as int? ??
+        ((json['defense'] as int) * 0.6 + (json['rebounding'] as int) * 0.4)
+            .round();
+    final int defaultSteals =
+        json['steals'] as int? ??
         ((json['defense'] as int) * 0.7 + (json['speed'] as int) * 0.3).round();
-    
+
+    // Handle backward compatibility: stamina -> postShooting
+    final int postShootingValue =
+        json['postShooting'] as int? ??
+        json['stamina'] as int? ??
+        ((json['shooting'] as int) * 0.6 + (json['rebounding'] as int) * 0.4)
+            .round();
+
     // Assign default position based on attributes if missing
-    final String defaultPosition = json['position'] as String? ?? 
+    final String defaultPosition =
+        json['position'] as String? ??
         _assignPositionBasedOnAttributes(
           json['heightInches'] as int,
           json['passing'] as int,
@@ -163,9 +179,9 @@ class Player {
           defaultBlocks,
           json['defense'] as int,
           json['speed'] as int,
-          json['stamina'] as int,
+          postShootingValue,
         );
-    
+
     return Player(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -173,7 +189,7 @@ class Player {
       shooting: json['shooting'] as int,
       defense: json['defense'] as int,
       speed: json['speed'] as int,
-      stamina: json['stamina'] as int,
+      postShooting: postShootingValue,
       passing: json['passing'] as int,
       rebounding: json['rebounding'] as int,
       ballHandling: json['ballHandling'] as int,
@@ -181,6 +197,7 @@ class Player {
       blocks: defaultBlocks,
       steals: defaultSteals,
       position: defaultPosition,
+      roleArchetypeId: json['roleArchetypeId'] as String?,
     );
   }
 
@@ -196,18 +213,35 @@ class Player {
     int blocks,
     int defense,
     int speed,
-    int stamina,
+    int postShooting,
   ) {
     // Calculate affinity scores for each position
-    final pgScore = (passing * 0.4) + (ballHandling * 0.3) + (speed * 0.2) - ((height - 72) * 0.5);
-    final sgScore = (shooting * 0.35) + (threePoint * 0.35) + (speed * 0.2) + 
-                    ((height >= 73 && height <= 78) ? 10 : 0);
-    final athleticism = (speed + stamina) / 2;
-    final sfScore = (shooting * 0.25) + (defense * 0.25) + (athleticism * 0.25) + 
-                    ((height >= 76 && height <= 80) ? 25 : 0);
-    final pfScore = (rebounding * 0.35) + (defense * 0.25) + (shooting * 0.2) + ((height - 76) * 1.0);
-    final cScore = (rebounding * 0.35) + (blocks * 0.3) + (defense * 0.25) + ((height - 78) * 1.5);
-    
+    final pgScore =
+        (passing * 0.4) +
+        (ballHandling * 0.3) +
+        (speed * 0.2) -
+        ((height - 72) * 0.5);
+    final sgScore =
+        (shooting * 0.35) +
+        (threePoint * 0.35) +
+        (speed * 0.2) +
+        ((height >= 73 && height <= 78) ? 10 : 0);
+    final sfScore =
+        (shooting * 0.25) +
+        (defense * 0.25) +
+        (speed * 0.2) +
+        ((height >= 76 && height <= 80) ? 25 : 0);
+    final pfScore =
+        (rebounding * 0.35) +
+        (defense * 0.25) +
+        (postShooting * 0.25) +
+        ((height - 76) * 1.0);
+    final cScore =
+        (rebounding * 0.35) +
+        (blocks * 0.3) +
+        (postShooting * 0.25) +
+        ((height - 78) * 1.5);
+
     // Find position with highest affinity
     final scores = {
       'PG': pgScore,
@@ -216,7 +250,7 @@ class Player {
       'PF': pfScore,
       'C': cScore,
     };
-    
+
     return scores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
   }
 
@@ -229,7 +263,7 @@ class Player {
       shooting: shooting,
       defense: defense,
       speed: speed,
-      stamina: stamina,
+      postShooting: postShooting,
       passing: passing,
       rebounding: rebounding,
       ballHandling: ballHandling,
@@ -237,6 +271,46 @@ class Player {
       blocks: blocks,
       steals: steals,
       position: newPosition,
+      roleArchetypeId: roleArchetypeId,
+    );
+  }
+
+  /// Create a copy of this Player with a new role archetype
+  Player copyWithRoleArchetype(String? newRoleArchetypeId) {
+    return Player(
+      id: id,
+      name: name,
+      heightInches: heightInches,
+      shooting: shooting,
+      defense: defense,
+      speed: speed,
+      postShooting: postShooting,
+      passing: passing,
+      rebounding: rebounding,
+      ballHandling: ballHandling,
+      threePoint: threePoint,
+      blocks: blocks,
+      steals: steals,
+      position: position,
+      roleArchetypeId: newRoleArchetypeId,
+    );
+  }
+
+  /// Get the assigned role archetype for this player
+  /// Returns null if no role is assigned or if the role ID is invalid
+  RoleArchetype? getRoleArchetype() {
+    if (roleArchetypeId == null) return null;
+    return RoleArchetypeRegistry.getArchetypeById(roleArchetypeId!);
+  }
+
+  /// Calculate fit scores for all role archetypes within this player's position
+  /// Returns a map with archetype IDs as keys and fit scores (0-100) as values
+  /// Higher scores indicate better fit for that role
+  Map<String, double> getRoleFitScores() {
+    final archetypes = RoleArchetypeRegistry.getArchetypesForPosition(position);
+    return Map.fromEntries(
+      archetypes.map((archetype) =>
+          MapEntry(archetype.id, archetype.calculateFitScore(this))),
     );
   }
 

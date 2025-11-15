@@ -139,7 +139,7 @@ class PlayerGenerator {
     int shooting = _generateStat();
     int defense = _generateStat();
     int speed = _generateStat();
-    int stamina = _generateStat();
+    int postShooting = _generateStat();
     int passing = _generateStat();
     int rebounding = _generateStat();
     int ballHandling = _generateStat();
@@ -149,19 +149,21 @@ class PlayerGenerator {
     
     // Apply height-based modifiers
     if (height >= 80) {
-      // Tall players (6'8"+): better at rebounding and blocks, worse at steals, shooting, and speed
+      // Tall players (6'8"+): better at rebounding, blocks, and post shooting, worse at steals, shooting, and speed
       rebounding = (rebounding + 15).clamp(0, 100);
       blocks = (blocks + 20).clamp(0, 100);
+      postShooting = (postShooting + 15).clamp(0, 100);
       steals = (steals - 8).clamp(0, 100);
       shooting = (shooting - 5).clamp(0, 100);
       speed = (speed - 10).clamp(0, 100);
     } else if (height <= 72) {
-      // Short players (6'0" and under): better at steals, shooting, and speed, worse at rebounding and blocks
+      // Short players (6'0" and under): better at steals, shooting, and speed, worse at rebounding, blocks, and post shooting
       steals = (steals + 20).clamp(0, 100);
       shooting = (shooting + 15).clamp(0, 100);
       speed = (speed + 10).clamp(0, 100);
       rebounding = (rebounding - 10).clamp(0, 100);
       blocks = (blocks - 15).clamp(0, 100);
+      postShooting = (postShooting - 10).clamp(0, 100);
     }
     
     // Assign position based on attributes and height
@@ -175,7 +177,7 @@ class PlayerGenerator {
       blocks,
       defense,
       speed,
-      stamina,
+      postShooting,
     );
     
     return Player(
@@ -185,7 +187,7 @@ class PlayerGenerator {
       shooting: shooting,
       defense: defense,
       speed: speed,
-      stamina: stamina,
+      postShooting: postShooting,
       passing: passing,
       rebounding: rebounding,
       ballHandling: ballHandling,
@@ -208,7 +210,7 @@ class PlayerGenerator {
     int blocks,
     int defense,
     int speed,
-    int stamina,
+    int postShooting,
   ) {
     // PG: passing (40%), ballHandling (30%), speed (20%), height penalty
     final pgScore = (passing * 0.4) + (ballHandling * 0.3) + (speed * 0.2) - 
@@ -218,17 +220,16 @@ class PlayerGenerator {
     final sgScore = (shooting * 0.35) + (threePoint * 0.35) + (speed * 0.2) + 
                     ((height >= 73 && height <= 78) ? 10.0 : 0.0);
     
-    // SF: shooting (25%), defense (25%), athleticism (25%), height bonus for 76-80"
-    final athleticism = (speed + stamina) / 2.0;
-    final sfScore = (shooting * 0.25) + (defense * 0.25) + (athleticism * 0.25) + 
+    // SF: shooting (25%), defense (25%), speed (20%), height bonus for 76-80"
+    final sfScore = (shooting * 0.25) + (defense * 0.25) + (speed * 0.2) + 
                     ((height >= 76 && height <= 80) ? 25.0 : 0.0);
     
-    // PF: rebounding (35%), defense (25%), shooting (20%), height bonus
-    final pfScore = (rebounding * 0.35) + (defense * 0.25) + (shooting * 0.2) + 
+    // PF: rebounding (35%), defense (25%), postShooting (25%), height bonus
+    final pfScore = (rebounding * 0.35) + (defense * 0.25) + (postShooting * 0.25) + 
                     ((height - 76) * 1.0);
     
-    // C: rebounding (35%), blocks (30%), defense (25%), height bonus
-    final cScore = (rebounding * 0.35) + (blocks * 0.3) + (defense * 0.25) + 
+    // C: rebounding (35%), blocks (30%), postShooting (25%), height bonus
+    final cScore = (rebounding * 0.35) + (blocks * 0.3) + (postShooting * 0.25) + 
                    ((height - 78) * 1.5);
     
     // Find position with highest affinity

@@ -9,6 +9,7 @@ import '../services/league_service.dart';
 import '../utils/accessibility_utils.dart';
 import '../utils/app_theme.dart';
 import '../widgets/loading_indicator.dart';
+import 'player_profile_page.dart';
 
 /// Game page for simulating basketball matches
 /// Displays game setup and results with accessibility features
@@ -646,7 +647,7 @@ class _GamePageState extends State<GamePage> {
               
               // Table header
               Semantics(
-                label: 'Statistics table with columns: Player name, Points, Rebounds, Assists, Turnovers, Steals, Blocks, Personal Fouls, Free Throws, Free Throw Percentage, Field goal percentage, Three point percentage',
+                label: 'Statistics table with columns: Player name, Points, Rebounds, Assists, Field Goals, Field Goal Percentage, Three Pointers, Three Point Percentage, Free Throws, Free Throw Percentage, Turnovers, Steals, Blocks, Personal Fouls',
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Container(
@@ -671,14 +672,16 @@ class _GamePageState extends State<GamePage> {
                         _buildHeaderCell('PTS'),
                         _buildHeaderCell('REB'),
                         _buildHeaderCell('AST'),
+                        _buildHeaderCell('FG', width: 60),
+                        _buildHeaderCell('FG%'),
+                        _buildHeaderCell('3PT', width: 60),
+                        _buildHeaderCell('3P%'),
+                        _buildHeaderCell('FT', width: 60),
+                        _buildHeaderCell('FT%'),
                         _buildHeaderCell('TO'),
                         _buildHeaderCell('STL'),
                         _buildHeaderCell('BLK'),
                         _buildHeaderCell('PF'),
-                        _buildHeaderCell('FT'),
-                        _buildHeaderCell('FT%'),
-                        _buildHeaderCell('FG%'),
-                        _buildHeaderCell('3P%'),
                       ],
                     ),
                   ),
@@ -756,7 +759,7 @@ class _GamePageState extends State<GamePage> {
                     children: [
                       // User team totals
                       Semantics(
-                        label: '${_userTeam!.name} totals: $userTeamPoints points, $userTeamRebounds rebounds, $userTeamAssists assists, $userTeamTO turnovers, $userTeamSTL steals, $userTeamBLK blocks, $userTeamPF fouls, $userTeamFTM of $userTeamFTA free throws, ${userTeamFTPct.toStringAsFixed(1)} percent free throws, ${userTeamFGPct.toStringAsFixed(1)} percent field goals, ${userTeam3PPct.toStringAsFixed(1)} percent three pointers',
+                        label: '${_userTeam!.name} totals: $userTeamPoints points, $userTeamRebounds rebounds, $userTeamAssists assists, $userTeamFGM of $userTeamFGA field goals, ${userTeamFGPct.toStringAsFixed(1)} percent field goals, $userTeam3PM of $userTeam3PA three pointers, ${userTeam3PPct.toStringAsFixed(1)} percent three pointers, $userTeamFTM of $userTeamFTA free throws, ${userTeamFTPct.toStringAsFixed(1)} percent free throws, $userTeamTO turnovers, $userTeamSTL steals, $userTeamBLK blocks, $userTeamPF fouls',
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -774,14 +777,16 @@ class _GamePageState extends State<GamePage> {
                               _buildStatCell(userTeamPoints, isBold: true),
                               _buildStatCell(userTeamRebounds, isBold: true),
                               _buildStatCell(userTeamAssists, isBold: true),
+                              _buildFractionCell(userTeamFGM, userTeamFGA, isBold: true, width: 60),
+                              _buildPercentageCell(userTeamFGPct, isBold: true),
+                              _buildFractionCell(userTeam3PM, userTeam3PA, isBold: true, width: 60),
+                              _buildPercentageCell(userTeam3PPct, isBold: true),
+                              _buildFractionCell(userTeamFTM, userTeamFTA, isBold: true, width: 60),
+                              _buildPercentageCell(userTeamFTPct, isBold: true),
                               _buildStatCell(userTeamTO, isBold: true),
                               _buildStatCell(userTeamSTL, isBold: true),
                               _buildStatCell(userTeamBLK, isBold: true),
                               _buildStatCell(userTeamPF, isBold: true),
-                              _buildFreeThrowCell(userTeamFTM, userTeamFTA, isBold: true),
-                              _buildPercentageCell(userTeamFTPct, isBold: true),
-                              _buildPercentageCell(userTeamFGPct, isBold: true),
-                              _buildPercentageCell(userTeam3PPct, isBold: true),
                             ],
                           ),
                         ),
@@ -791,7 +796,7 @@ class _GamePageState extends State<GamePage> {
                       
                       // Opponent team totals
                       Semantics(
-                        label: '${_opponentTeam!.name} totals: $oppTeamPoints points, $oppTeamRebounds rebounds, $oppTeamAssists assists, $oppTeamTO turnovers, $oppTeamSTL steals, $oppTeamBLK blocks, $oppTeamPF fouls, $oppTeamFTM of $oppTeamFTA free throws, ${oppTeamFTPct.toStringAsFixed(1)} percent free throws, ${oppTeamFGPct.toStringAsFixed(1)} percent field goals, ${oppTeam3PPct.toStringAsFixed(1)} percent three pointers',
+                        label: '${_opponentTeam!.name} totals: $oppTeamPoints points, $oppTeamRebounds rebounds, $oppTeamAssists assists, $oppTeamFGM of $oppTeamFGA field goals, ${oppTeamFGPct.toStringAsFixed(1)} percent field goals, $oppTeam3PM of $oppTeam3PA three pointers, ${oppTeam3PPct.toStringAsFixed(1)} percent three pointers, $oppTeamFTM of $oppTeamFTA free throws, ${oppTeamFTPct.toStringAsFixed(1)} percent free throws, $oppTeamTO turnovers, $oppTeamSTL steals, $oppTeamBLK blocks, $oppTeamPF fouls',
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -809,14 +814,16 @@ class _GamePageState extends State<GamePage> {
                               _buildStatCell(oppTeamPoints, isBold: true),
                               _buildStatCell(oppTeamRebounds, isBold: true),
                               _buildStatCell(oppTeamAssists, isBold: true),
+                              _buildFractionCell(oppTeamFGM, oppTeamFGA, isBold: true, width: 60),
+                              _buildPercentageCell(oppTeamFGPct, isBold: true),
+                              _buildFractionCell(oppTeam3PM, oppTeam3PA, isBold: true, width: 60),
+                              _buildPercentageCell(oppTeam3PPct, isBold: true),
+                              _buildFractionCell(oppTeamFTM, oppTeamFTA, isBold: true, width: 60),
+                              _buildPercentageCell(oppTeamFTPct, isBold: true),
                               _buildStatCell(oppTeamTO, isBold: true),
                               _buildStatCell(oppTeamSTL, isBold: true),
                               _buildStatCell(oppTeamBLK, isBold: true),
                               _buildStatCell(oppTeamPF, isBold: true),
-                              _buildFreeThrowCell(oppTeamFTM, oppTeamFTA, isBold: true),
-                              _buildPercentageCell(oppTeamFTPct, isBold: true),
-                              _buildPercentageCell(oppTeamFGPct, isBold: true),
-                              _buildPercentageCell(oppTeam3PPct, isBold: true),
                             ],
                           ),
                         ),
@@ -836,9 +843,10 @@ class _GamePageState extends State<GamePage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final player = item['player'] as Player;
     final stats = item['stats'] as PlayerGameStats;
+    final isUserTeam = item['isUserTeam'] as bool;
     
     return Semantics(
-      label: '${player.name}, ${stats.points} points, ${stats.rebounds} rebounds, ${stats.assists} assists, ${stats.turnovers} turnovers, ${stats.steals} steals, ${stats.blocks} blocks, ${stats.fouls} fouls, ${stats.freeThrowsMade} of ${stats.freeThrowsAttempted} free throws, ${stats.freeThrowPercentage.toStringAsFixed(1)} percent free throws, ${stats.fieldGoalPercentage.toStringAsFixed(1)} percent field goals, ${stats.threePointPercentage.toStringAsFixed(1)} percent three pointers',
+      label: '${player.name}, ${stats.points} points, ${stats.rebounds} rebounds, ${stats.assists} assists, ${stats.fieldGoalsMade} of ${stats.fieldGoalsAttempted} field goals, ${stats.fieldGoalPercentage.toStringAsFixed(1)} percent field goals, ${stats.threePointersMade} of ${stats.threePointersAttempted} three pointers, ${stats.threePointPercentage.toStringAsFixed(1)} percent three pointers, ${stats.freeThrowsMade} of ${stats.freeThrowsAttempted} free throws, ${stats.freeThrowPercentage.toStringAsFixed(1)} percent free throws, ${stats.turnovers} turnovers, ${stats.steals} steals, ${stats.blocks} blocks, ${stats.fouls} fouls',
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Container(
@@ -855,25 +863,34 @@ class _GamePageState extends State<GamePage> {
             children: [
               SizedBox(
                 width: 120,
-                child: Text(
-                  player.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                child: InkWell(
+                  onTap: () => _navigateToPlayerProfile(player, isUserTeam),
+                  child: Text(
+                    player.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      decoration: TextDecoration.underline,
+                      color: isDark
+                          ? AppTheme.primaryColorDark
+                          : AppTheme.primaryColor,
+                    ),
                   ),
                 ),
               ),
               _buildStatCell(stats.points, isHighPerformance: stats.points >= 20),
               _buildStatCell(stats.rebounds, isHighPerformance: stats.rebounds >= 10),
               _buildStatCell(stats.assists, isHighPerformance: stats.assists >= 10),
+              _buildFractionCell(stats.fieldGoalsMade, stats.fieldGoalsAttempted, width: 60),
+              _buildPercentageCell(stats.fieldGoalPercentage, isHighPerformance: stats.fieldGoalPercentage >= 50),
+              _buildFractionCell(stats.threePointersMade, stats.threePointersAttempted, width: 60),
+              _buildPercentageCell(stats.threePointPercentage, isHighPerformance: stats.threePointPercentage >= 40),
+              _buildFractionCell(stats.freeThrowsMade, stats.freeThrowsAttempted, width: 60),
+              _buildPercentageCell(stats.freeThrowPercentage, isHighPerformance: stats.freeThrowPercentage >= 80),
               _buildStatCell(stats.turnovers),
               _buildStatCell(stats.steals, isHighPerformance: stats.steals >= 3),
               _buildStatCell(stats.blocks, isHighPerformance: stats.blocks >= 2),
               _buildStatCell(stats.fouls),
-              _buildFreeThrowCell(stats.freeThrowsMade, stats.freeThrowsAttempted),
-              _buildPercentageCell(stats.freeThrowPercentage, isHighPerformance: stats.freeThrowPercentage >= 80),
-              _buildPercentageCell(stats.fieldGoalPercentage, isHighPerformance: stats.fieldGoalPercentage >= 50),
-              _buildPercentageCell(stats.threePointPercentage, isHighPerformance: stats.threePointPercentage >= 40),
             ],
           ),
         ),
@@ -881,10 +898,10 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  Widget _buildHeaderCell(String text) {
+  Widget _buildHeaderCell(String text, {double width = 50}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
-      width: 50,
+      width: width,
       child: Text(
         text,
         style: TextStyle(
@@ -920,20 +937,6 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  Widget _buildFreeThrowCell(int made, int attempted, {bool isBold = false}) {
-    return SizedBox(
-      width: 50,
-      child: Text(
-        attempted > 0 ? '$made/$attempted' : '-',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
-
   Widget _buildPercentageCell(double value, {bool isHighPerformance = false, bool isBold = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
@@ -953,6 +956,37 @@ class _GamePageState extends State<GamePage> {
           color: textColor,
         ),
         textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildFractionCell(int made, int attempted, {bool isBold = false, double width = 50}) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        attempted > 0 ? '$made/$attempted' : '-',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  /// Navigate to player profile page
+  void _navigateToPlayerProfile(Player player, bool isUserTeam) {
+    final team = isUserTeam ? _userTeam! : _opponentTeam!;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlayerProfilePage(
+          player: player,
+          teamPlayers: team.players,
+          season: _season,
+          leagueService: widget.leagueService,
+          teamId: team.id,
+        ),
       ),
     );
   }

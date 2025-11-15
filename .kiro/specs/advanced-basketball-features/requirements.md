@@ -20,6 +20,12 @@ This document outlines the requirements for advanced features in the basketball 
 - **Position Affinity**: A calculated score (0-100) indicating how well-suited a player is for a specific position based on their attributes and height
 - **Blocks Attribute**: A player's ability to block opponent shots (0-100)
 - **Steals Attribute**: A player's ability to steal the ball from opponents (0-100)
+- **Post-Season**: The playoff tournament that occurs after the 82-game regular season
+- **Play-In Tournament**: Games between seeds 7-10 in each conference to determine the final two playoff spots
+- **Playoff Series**: A best-of-seven matchup between two teams where the first to win 4 games advances
+- **Conference**: One of two divisions (Eastern or Western) that teams are organized into for playoff seeding
+- **Playoff Bracket**: The visual tournament structure showing all playoff matchups and results
+- **Playoff Round**: One stage of the post-season (First Round, Conference Semifinals, Conference Finals, NBA Finals)
 
 ## Requirements
 
@@ -206,3 +212,176 @@ This document outlines the requirements for advanced features in the basketball 
 4. WHEN a player is assigned to PF position, THE Application SHALL increase their probability of attempting rebounds by 15%
 5. WHEN a player is assigned to C position, THE Application SHALL increase their probability of attempting rebounds by 25% and blocks by 20%
 6. THE Application SHALL ensure position modifiers stack with player attributes to determine final probabilities
+
+### Requirement 16
+
+**User Story:** As a User, I want to assign specific role archetypes to players within their position, so that I can define specialized playstyles that emphasize different attributes.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL define multiple role archetypes for each of the five positions
+2. THE Application SHALL define four role archetypes for Point Guard position: All-Around PG, Floor General, Slashing Playmaker, and Offensive Point
+3. THE Application SHALL define three role archetypes for Shooting Guard position: Three-Level Scorer, 3-and-D, and Microwave Shooter
+4. THE Application SHALL define three role archetypes for Small Forward position: Point Forward, 3-and-D Wing, and Athletic Finisher
+5. THE Application SHALL define three role archetypes for Power Forward position: Playmaking Big, Stretch Four, and Rim Runner
+6. THE Application SHALL define three role archetypes for Center position: Paint Beast, Stretch Five, and Standard Center
+7. THE Application SHALL persist player role archetype assignments in save files
+8. THE Application SHALL allow the User to change a player's role archetype on the team screen
+
+### Requirement 17
+
+**User Story:** As a User, I want each role archetype to highlight specific attributes that are important for that playstyle, so that I can understand what makes a player effective in that role.
+
+#### Acceptance Criteria
+
+1. WHEN viewing a role archetype, THE Application SHALL display which attributes are most important for that role
+2. THE Application SHALL define All-Around PG as emphasizing balanced attributes across passing, shooting, ball handling, and speed
+3. THE Application SHALL define Floor General as emphasizing passing and ball handling with reduced shooting emphasis
+4. THE Application SHALL define Slashing Playmaker as emphasizing post shooting, speed, and ball handling with reduced three-point emphasis
+5. THE Application SHALL define Offensive Point as emphasizing shooting and three-point with slightly reduced passing emphasis
+6. THE Application SHALL define Three-Level Scorer as emphasizing shooting, three-point, and ball handling with reduced passing emphasis
+7. THE Application SHALL define 3-and-D (SG) as emphasizing three-point, defense, and steals
+8. THE Application SHALL define Microwave Shooter as emphasizing shooting and three-point with reduced ball handling emphasis
+9. THE Application SHALL define Point Forward as emphasizing passing and ball handling with reduced post shooting emphasis
+10. THE Application SHALL define 3-and-D Wing as emphasizing three-point, defense, steals, blocks, and rebounding
+11. THE Application SHALL define Athletic Finisher as emphasizing post shooting, speed, and rebounding with reduced three-point emphasis
+12. THE Application SHALL define Playmaking Big as emphasizing passing and rebounding with reduced three-point emphasis
+13. THE Application SHALL define Stretch Four as emphasizing three-point and shooting with maintained rebounding
+14. THE Application SHALL define Rim Runner as emphasizing post shooting, rebounding, and blocks with minimal three-point emphasis
+15. THE Application SHALL define Paint Beast as emphasizing post shooting, blocks, rebounding, and defense with no three-point emphasis
+16. THE Application SHALL define Stretch Five as emphasizing three-point, shooting, and rebounding
+17. THE Application SHALL define Standard Center as emphasizing balanced interior attributes between Paint Beast and Stretch Five
+
+### Requirement 18
+
+**User Story:** As a User, I want to see how well each player fits different role archetypes, so that I can assign them to roles that match their strengths.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL calculate a fit score (0-100) for each role archetype for every player
+2. WHEN calculating fit scores, THE Application SHALL weight the important attributes for each role more heavily
+3. THE Application SHALL display fit scores for all role archetypes within a player's position on the player profile page
+4. THE Application SHALL allow the User to browse through all role archetypes on the player profile page to see fit scores
+5. THE Application SHALL visually highlight the best-fit role archetype for each player
+6. THE Application SHALL show which attributes contribute to a player's fit for each role
+
+### Requirement 19
+
+**User Story:** As a User, I want to select role archetypes for players on the team screen, so that I can quickly assign specialized roles to my roster.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL display the current role archetype for each player on the team screen
+2. THE Application SHALL provide a role selector on the team screen that shows all available archetypes for the player's position
+3. WHEN selecting a role archetype, THE Application SHALL display the fit score for that role
+4. THE Application SHALL highlight important attributes for the selected role archetype
+5. THE Application SHALL persist role archetype changes immediately to the save file
+
+### Requirement 20
+
+**User Story:** As a User, I want role archetypes to affect gameplay statistics, so that assigning specialized roles has meaningful impact on game outcomes.
+
+#### Acceptance Criteria
+
+1. WHEN a player is assigned the Floor General role, THE Application SHALL increase assist probability by 20% and decrease shot attempt probability by 15%
+2. WHEN a player is assigned the Slashing Playmaker role, THE Application SHALL increase post shooting attempt probability by 25% and decrease three-point attempt probability by 20%
+3. WHEN a player is assigned the Offensive Point role, THE Application SHALL increase shooting attempt probability by 15% and decrease assist probability by 10%
+4. WHEN a player is assigned the Three-Level Scorer role, THE Application SHALL increase shot creation probability by 20% and decrease assist probability by 15%
+5. WHEN a player is assigned the 3-and-D (SG) role, THE Application SHALL increase three-point attempt probability by 30%, steal probability by 25%, and defensive impact by 20%
+6. WHEN a player is assigned the Microwave Shooter role, THE Application SHALL increase catch-and-shoot probability by 35% and decrease ball handling usage by 25%
+7. WHEN a player is assigned the Point Forward role, THE Application SHALL increase assist probability by 25% and decrease post shooting attempt probability by 20%
+8. WHEN a player is assigned the 3-and-D Wing role, THE Application SHALL increase three-point attempt probability by 25%, steal probability by 20%, block probability by 15%, and rebound probability by 10%
+9. WHEN a player is assigned the Athletic Finisher role, THE Application SHALL increase post shooting attempt probability by 30% and decrease three-point attempt probability by 30%
+10. WHEN a player is assigned the Playmaking Big role, THE Application SHALL increase assist probability by 20% and decrease three-point attempt probability by 25%
+11. WHEN a player is assigned the Stretch Four role, THE Application SHALL increase three-point attempt probability by 25%
+12. WHEN a player is assigned the Rim Runner role, THE Application SHALL increase post shooting attempt probability by 35%, rebound probability by 20%, and decrease three-point attempt probability by 90%
+13. WHEN a player is assigned the Paint Beast role, THE Application SHALL increase post shooting attempt probability by 30%, block probability by 35%, and eliminate three-point attempts
+14. WHEN a player is assigned the Stretch Five role, THE Application SHALL increase three-point attempt probability by 30% and maintain rebound probability
+15. WHEN a player is assigned the Standard Center role, THE Application SHALL balance interior scoring and rebounding with moderate three-point attempts
+16. THE Application SHALL ensure role archetype modifiers stack with position modifiers and player attributes
+
+### Requirement 21
+
+**User Story:** As a User, I want a post-season tournament after 82 regular season games, so that I can compete for a championship like in the NBA.
+
+#### Acceptance Criteria
+
+1. WHEN the regular season reaches 82 games, THE Application SHALL trigger the post-season tournament
+2. THE Application SHALL seed all 30 teams based on regular season win-loss record
+3. THE Application SHALL separate teams into Eastern Conference and Western Conference for seeding
+4. THE Application SHALL seed teams 1-15 within each conference based on wins
+5. THE Application SHALL display the playoff bracket showing all matchups and seeding
+
+### Requirement 22
+
+**User Story:** As a User, I want play-in tournament games for seeds 7-10 in each conference, so that the playoff structure matches the NBA format.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL conduct play-in games for seeds 7-10 in each conference
+2. WHEN conducting play-in games, THE Application SHALL match seed 7 vs seed 8 in each conference
+3. WHEN conducting play-in games, THE Application SHALL match seed 9 vs seed 10 in each conference
+4. THE Application SHALL award the 7th playoff seed to the winner of the 7 vs 8 game
+5. THE Application SHALL conduct a second play-in game between the loser of 7 vs 8 and the winner of 9 vs 10
+6. THE Application SHALL award the 8th playoff seed to the winner of the second play-in game
+7. THE Application SHALL eliminate seeds 9 and 10 that do not win their play-in games
+
+### Requirement 23
+
+**User Story:** As a User, I want playoff series to be best-of-seven format, so that the playoffs feel authentic and competitive.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL conduct all playoff series as best-of-seven (first to 4 wins)
+2. THE Application SHALL track wins for each team in the current series
+3. THE Application SHALL advance the team that reaches 4 wins first
+4. THE Application SHALL eliminate the team that loses the series
+5. THE Application SHALL display the current series score (e.g., "Lakers lead 3-2")
+
+### Requirement 24
+
+**User Story:** As a User, I want playoff rounds to follow NBA structure with First Round, Conference Semifinals, Conference Finals, and NBA Finals, so that the tournament progression is clear.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL conduct First Round with seeds 1v8, 2v7, 3v6, 4v5 in each conference
+2. THE Application SHALL conduct Conference Semifinals with winners from First Round
+3. THE Application SHALL conduct Conference Finals with winners from Conference Semifinals
+4. THE Application SHALL conduct NBA Finals between Eastern Conference champion and Western Conference champion
+5. THE Application SHALL display the current playoff round name prominently
+
+### Requirement 25
+
+**User Story:** As a User, I want to view the playoff bracket at any time during the post-season, so that I can track tournament progress.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL display a visual playoff bracket showing all matchups
+2. THE Application SHALL show completed series results in the bracket
+3. THE Application SHALL show current series scores for ongoing matchups
+4. THE Application SHALL highlight the User's team in the bracket
+5. THE Application SHALL update the bracket after each game is played
+
+### Requirement 26
+
+**User Story:** As a User, I want playoff statistics to be tracked separately from regular season statistics, so that I can evaluate playoff performance.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL track playoff statistics separately from regular season statistics
+2. THE Application SHALL display playoff PPG, RPG, APG, and shooting percentages
+3. THE Application SHALL show both regular season and playoff stats on player profiles
+4. THE Application SHALL persist playoff statistics in save files
+5. THE Application SHALL reset playoff statistics at the start of each new season
+
+### Requirement 27
+
+**User Story:** As a User, I want to advance through playoff rounds by playing games, so that I control my team's championship journey.
+
+#### Acceptance Criteria
+
+1. WHEN the User's team is in the playoffs, THE Application SHALL allow the User to play the next playoff game
+2. THE Application SHALL simulate non-User playoff games automatically
+3. THE Application SHALL advance the playoff bracket after all games in a round are complete
+4. THE Application SHALL display a championship celebration when the User wins the NBA Finals
+5. THE Application SHALL allow the User to start a new season after the playoffs conclude

@@ -155,7 +155,7 @@ class _PlayerCard extends StatelessWidget {
         _buildStatRow('Shooting', player.shooting),
         _buildStatRow('Defense', player.defense),
         _buildStatRow('Speed', player.speed),
-        _buildStatRow('Stamina', player.stamina),
+        _buildStatRow('Post Shooting', player.postShooting),
         _buildStatRow('Passing', player.passing),
         _buildStatRow('Rebounding', player.rebounding),
         _buildStatRow('Ball Handling', player.ballHandling),

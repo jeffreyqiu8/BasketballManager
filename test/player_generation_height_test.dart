@@ -61,7 +61,7 @@ void main() {
         expect(player.shooting, inInclusiveRange(0, 100));
         expect(player.defense, inInclusiveRange(0, 100));
         expect(player.speed, inInclusiveRange(0, 100));
-        expect(player.stamina, inInclusiveRange(0, 100));
+        expect(player.postShooting, inInclusiveRange(0, 100));
         expect(player.passing, inInclusiveRange(0, 100));
         expect(player.rebounding, inInclusiveRange(0, 100));
         expect(player.ballHandling, inInclusiveRange(0, 100));

@@ -187,7 +187,7 @@ void main() {
               shooting: 70,
               defense: 70,
               speed: 70,
-              stamina: 70,
+              postShooting: 70,
               passing: 70,
               rebounding: 70,
               ballHandling: 70,

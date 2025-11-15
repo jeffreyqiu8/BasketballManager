@@ -304,7 +304,7 @@ void main() {
         shooting: 10, // Low but not zero
         defense: 10,
         speed: 10,
-        stamina: 10,
+        postShooting: 10,
         passing: 10,
         rebounding: 10,
         ballHandling: 10,
@@ -321,7 +321,7 @@ void main() {
         shooting: 80,
         defense: 75,
         speed: 70,
-        stamina: 85,
+        postShooting: 85,
         passing: 65,
         rebounding: 70,
         ballHandling: 75,

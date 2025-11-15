@@ -589,6 +589,890 @@ Color _getAffinityColor(double affinity) {
 }
 ```
 
+## Player Role Archetype System
+
+### Role Archetype Definitions
+
+Each position has multiple specialized role archetypes that emphasize different playstyles:
+
+#### Point Guard Archetypes
+
+| Role | Key Attributes | Gameplay Modifiers |
+|------|---------------|-------------------|
+| All-Around PG | Balanced: passing, shooting, ballHandling, speed | Standard PG modifiers |
+| Floor General | Passing (45%), ballHandling (30%), speed (15%) | +20% assists, -15% shot attempts |
+| Slashing Playmaker | postShooting (35%), speed (25%), ballHandling (20%) | +25% post shots, -20% three-point attempts |
+| Offensive Point | shooting (35%), threePoint (30%), passing (20%) | +15% shot attempts, -10% assists |
+
+#### Shooting Guard Archetypes
+
+| Role | Key Attributes | Gameplay Modifiers |
+|------|---------------|-------------------|
+| Three-Level Scorer | shooting (35%), threePoint (30%), ballHandling (25%) | +20% shot creation, -15% assists |
+| 3-and-D | threePoint (40%), defense (30%), steals (20%) | +30% three-point attempts, +25% steals, +20% defense |
+| Microwave Shooter | shooting (45%), threePoint (40%), speed (10%) | +35% catch-and-shoot, -25% ball handling usage |
+
+#### Small Forward Archetypes
+
+| Role | Key Attributes | Gameplay Modifiers |
+|------|---------------|-------------------|
+| Point Forward | passing (35%), ballHandling (25%), shooting (20%) | +25% assists, -20% post shots |
+| 3-and-D Wing | threePoint (30%), defense (25%), steals (20%), blocks (15%), rebounding (10%) | +25% three-point attempts, +20% steals, +15% blocks, +10% rebounds |
+| Athletic Finisher | postShooting (40%), speed (25%), rebounding (20%) | +30% post shots, -30% three-point attempts |
+
+#### Power Forward Archetypes
+
+| Role | Key Attributes | Gameplay Modifiers |
+|------|---------------|-------------------|
+| Playmaking Big | passing (35%), rebounding (30%), postShooting (20%) | +20% assists, -25% three-point attempts |
+| Stretch Four | threePoint (35%), shooting (30%), rebounding (25%) | +25% three-point attempts |
+| Rim Runner | postShooting (40%), rebounding (35%), blocks (20%) | +35% post shots, +20% rebounds, -90% three-point attempts |
+
+#### Center Archetypes
+
+| Role | Key Attributes | Gameplay Modifiers |
+|------|---------------|-------------------|
+| Paint Beast | postShooting (35%), blocks (30%), rebounding (25%), defense (10%) | +30% post shots, +35% blocks, no three-point attempts |
+| Stretch Five | threePoint (35%), shooting (25%), rebounding (25%) | +30% three-point attempts, maintain rebounds |
+| Standard Center | rebounding (30%), postShooting (25%), blocks (25%), defense (20%) | Balanced interior play, moderate three-point attempts |
+
+### Role Fit Calculation
+
+```dart
+class RoleArchetype {
+  final String id;
+  final String name;
+  final String position;
+  final Map<String, double> attributeWeights; // attribute name -> weight (0-1)
+  final Map<String, double> gameplayModifiers; // modifier type -> multiplier
+  
+  double calculateFitScore(Player player) {
+    double score = 0.0;
+    double totalWeight = 0.0;
+    
+    attributeWeights.forEach((attribute, weight) {
+      int attributeValue = _getPlayerAttribute(player, attribute);
+      score += attributeValue * weight;
+      totalWeight += weight;
+    });
+    
+    // Normalize to 0-100 scale
+    return (score / totalWeight).clamp(0, 100);
+  }
+  
+  int _getPlayerAttribute(Player player, String attribute) {
+    switch (attribute) {
+      case 'shooting': return player.shooting;
+      case 'threePoint': return player.threePoint;
+      case 'passing': return player.passing;
+      case 'ballHandling': return player.ballHandling;
+      case 'postShooting': return player.postShooting;
+      case 'defense': return player.defense;
+      case 'steals': return player.steals;
+      case 'blocks': return player.blocks;
+      case 'rebounding': return player.rebounding;
+      case 'speed': return player.speed;
+      case 'stamina': return player.stamina;
+      default: return 0;
+    }
+  }
+}
+```
+
+### Role Archetype Registry
+
+```dart
+class RoleArchetypeRegistry {
+  static final Map<String, List<RoleArchetype>> _archetypesByPosition = {
+    'PG': [
+      RoleArchetype(
+        id: 'pg_allaround',
+        name: 'All-Around PG',
+        position: 'PG',
+        attributeWeights: {
+          'passing': 0.25,
+          'shooting': 0.20,
+          'ballHandling': 0.25,
+          'speed': 0.20,
+          'threePoint': 0.10,
+        },
+        gameplayModifiers: {}, // Standard modifiers
+      ),
+      RoleArchetype(
+        id: 'pg_floor_general',
+        name: 'Floor General',
+        position: 'PG',
+        attributeWeights: {
+          'passing': 0.45,
+          'ballHandling': 0.30,
+          'speed': 0.15,
+          'defense': 0.10,
+        },
+        gameplayModifiers: {
+          'assistProbability': 1.20,
+          'shotAttemptProbability': 0.85,
+        },
+      ),
+      // ... other PG archetypes
+    ],
+    'SG': [ /* SG archetypes */ ],
+    'SF': [ /* SF archetypes */ ],
+    'PF': [ /* PF archetypes */ ],
+    'C': [ /* C archetypes */ ],
+  };
+  
+  static List<RoleArchetype> getArchetypesForPosition(String position) {
+    return _archetypesByPosition[position] ?? [];
+  }
+  
+  static RoleArchetype? getArchetypeById(String id) {
+    for (var archetypes in _archetypesByPosition.values) {
+      for (var archetype in archetypes) {
+        if (archetype.id == id) return archetype;
+      }
+    }
+    return null;
+  }
+}
+```
+
+### Player Model Extensions for Roles
+
+```dart
+class Player {
+  // Existing fields...
+  final String? roleArchetypeId; // New: ID of assigned role archetype
+  
+  // New methods
+  RoleArchetype? getRoleArchetype() {
+    if (roleArchetypeId == null) return null;
+    return RoleArchetypeRegistry.getArchetypeById(roleArchetypeId!);
+  }
+  
+  Map<String, double> getRoleFitScores() {
+    final archetypes = RoleArchetypeRegistry.getArchetypesForPosition(position);
+    return Map.fromEntries(
+      archetypes.map((archetype) => 
+        MapEntry(archetype.id, archetype.calculateFitScore(this))
+      )
+    );
+  }
+  
+  Player copyWithRoleArchetype(String? roleArchetypeId);
+}
+```
+
+### Possession Simulation with Role Modifiers
+
+```dart
+class PossessionSimulation {
+  double _getModifiedProbability(Player player, String baseType, double baseProbability) {
+    double probability = baseProbability;
+    
+    // Apply position modifiers (existing)
+    probability *= _getPositionModifier(player.position, baseType);
+    
+    // Apply role archetype modifiers (new)
+    final role = player.getRoleArchetype();
+    if (role != null) {
+      final modifier = role.gameplayModifiers[baseType];
+      if (modifier != null) {
+        probability *= modifier;
+      }
+    }
+    
+    return probability.clamp(0.0, 1.0);
+  }
+  
+  // Example usage in possession simulation
+  void _simulatePossession(Team team, bool isHome) {
+    final shooter = _selectShooter(team.startingLineup);
+    
+    // Determine shot type with role modifiers
+    final threePointProb = _getModifiedProbability(
+      shooter,
+      'threePointAttemptProbability',
+      shooter.threePoint / 100 * 0.4,
+    );
+    
+    final isThreePoint = Random().nextDouble() < threePointProb;
+    
+    // ... rest of possession logic
+  }
+}
+```
+
+### UI Components for Role Management
+
+#### TeamPage Role Assignment
+
+```dart
+Widget _buildRoleSelector(Player player) {
+  final archetypes = RoleArchetypeRegistry.getArchetypesForPosition(player.position);
+  final fitScores = player.getRoleFitScores();
+  final currentRole = player.getRoleArchetype();
+  
+  return Column(
+    children: [
+      // Current role display
+      Text('Role: ${currentRole?.name ?? "None"}'),
+      
+      // Role selector dropdown
+      DropdownButton<String>(
+        value: player.roleArchetypeId,
+        items: archetypes.map((archetype) {
+          final fitScore = fitScores[archetype.id] ?? 0;
+          return DropdownMenuItem(
+            value: archetype.id,
+            child: Row(
+              children: [
+                Text(archetype.name),
+                SizedBox(width: 8),
+                _buildFitIndicator(fitScore),
+                Text('${fitScore.toStringAsFixed(0)}% fit'),
+              ],
+            ),
+          );
+        }).toList(),
+        onChanged: (newRoleId) => _updatePlayerRole(player, newRoleId),
+      ),
+      
+      // Important attributes for selected role
+      if (currentRole != null) _buildRoleAttributeHighlights(currentRole),
+    ],
+  );
+}
+
+Widget _buildRoleAttributeHighlights(RoleArchetype role) {
+  final sortedAttributes = role.attributeWeights.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Key Attributes:', style: TextStyle(fontWeight: FontWeight.bold)),
+      ...sortedAttributes.take(3).map((entry) {
+        return Row(
+          children: [
+            Icon(Icons.star, size: 16, color: Colors.amber),
+            Text(_formatAttributeName(entry.key)),
+          ],
+        );
+      }),
+    ],
+  );
+}
+
+Widget _buildFitIndicator(double fitScore) {
+  Color color;
+  if (fitScore >= 80) color = Colors.green;
+  else if (fitScore >= 60) color = Colors.yellow;
+  else color = Colors.red;
+  
+  return Container(
+    width: 40,
+    height: 8,
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(4),
+    ),
+  );
+}
+```
+
+#### PlayerProfilePage Role Fit Display
+
+```dart
+Widget _buildRoleFitSection(Player player) {
+  final archetypes = RoleArchetypeRegistry.getArchetypesForPosition(player.position);
+  final fitScores = player.getRoleFitScores();
+  final currentRole = player.getRoleArchetype();
+  
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Role Fit Analysis', style: Theme.of(context).textTheme.headline6),
+      SizedBox(height: 16),
+      
+      // List all roles with fit scores
+      ...archetypes.map((archetype) {
+        final fitScore = fitScores[archetype.id] ?? 0;
+        final isCurrent = archetype.id == player.roleArchetypeId;
+        
+        return Card(
+          color: isCurrent ? Colors.blue.shade50 : null,
+          child: ListTile(
+            leading: _buildFitScoreCircle(fitScore),
+            title: Text(
+              archetype.name,
+              style: TextStyle(
+                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            subtitle: _buildAttributeChips(archetype.attributeWeights),
+            trailing: isCurrent ? Icon(Icons.check_circle, color: Colors.blue) : null,
+            onTap: () => _showRoleDetails(archetype, player),
+          ),
+        );
+      }),
+    ],
+  );
+}
+
+Widget _buildFitScoreCircle(double fitScore) {
+  Color color;
+  if (fitScore >= 80) color = Colors.green;
+  else if (fitScore >= 60) color = Colors.yellow;
+  else color = Colors.red;
+  
+  return CircleAvatar(
+    backgroundColor: color,
+    child: Text(
+      '${fitScore.toStringAsFixed(0)}',
+      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    ),
+  );
+}
+
+Widget _buildAttributeChips(Map<String, double> attributeWeights) {
+  final topAttributes = attributeWeights.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  
+  return Wrap(
+    spacing: 4,
+    children: topAttributes.take(3).map((entry) {
+      return Chip(
+        label: Text(
+          _formatAttributeName(entry.key),
+          style: TextStyle(fontSize: 10),
+        ),
+        backgroundColor: Colors.blue.shade100,
+        padding: EdgeInsets.all(2),
+      );
+    }).toList(),
+  );
+}
+
+void _showRoleDetails(RoleArchetype archetype, Player player) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(archetype.name),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Key Attributes:', style: TextStyle(fontWeight: FontWeight.bold)),
+          ...archetype.attributeWeights.entries.map((entry) {
+            final playerValue = _getPlayerAttribute(player, entry.key);
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(_formatAttributeName(entry.key)),
+                Text('$playerValue', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            );
+          }),
+          SizedBox(height: 16),
+          Text('Gameplay Impact:', style: TextStyle(fontWeight: FontWeight.bold)),
+          ...archetype.gameplayModifiers.entries.map((entry) {
+            return Text('• ${_formatModifier(entry.key, entry.value)}');
+          }),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Close'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            _updatePlayerRole(player, archetype.id);
+            Navigator.pop(context);
+          },
+          child: Text('Assign Role'),
+        ),
+      ],
+    ),
+  );
+}
+```
+
+### Data Persistence
+
+Role archetype assignments are stored in the Player model:
+
+```dart
+// Player JSON serialization
+Map<String, dynamic> toJson() {
+  return {
+    // ... existing fields
+    'roleArchetypeId': roleArchetypeId,
+  };
+}
+
+// Player JSON deserialization
+factory Player.fromJson(Map<String, dynamic> json) {
+  return Player(
+    // ... existing fields
+    roleArchetypeId: json['roleArchetypeId'] as String?,
+  );
+}
+```
+
+### Backward Compatibility
+
+- Players without `roleArchetypeId` will have no role assigned (null)
+- UI will show "No role assigned" and allow selection
+- Gameplay will use standard position modifiers without role modifiers
+- Existing saves will continue to work without modification
+
+## Post-Season Tournament System
+
+### Overview
+
+After 82 regular season games, the application enters the post-season phase with a tournament structure matching the NBA format: play-in games for seeds 7-10, followed by best-of-seven playoff series through four rounds (First Round, Conference Semifinals, Conference Finals, NBA Finals).
+
+### Post-Season Data Models
+
+#### PlayoffSeries (New Model)
+```dart
+class PlayoffSeries {
+  final String id;
+  final String homeTeamId;
+  final String awayTeamId;
+  final int homeWins;
+  final int awayWins;
+  final String round; // 'play-in', 'first-round', 'conf-semis', 'conf-finals', 'finals'
+  final String conference; // 'east', 'west', or 'finals'
+  final List<String> gameIds; // References to Game objects
+  final bool isComplete;
+  
+  String? get winnerId => isComplete ? (homeWins > awayWins ? homeTeamId : awayTeamId) : null;
+  String get seriesScore => '$homeWins-$awayWins';
+  
+  PlayoffSeries copyWithGameResult(String gameId, String winnerId);
+  
+  Map<String, dynamic> toJson();
+  factory PlayoffSeries.fromJson(Map<String, dynamic> json);
+}
+```
+
+#### PlayoffBracket (New Model)
+```dart
+class PlayoffBracket {
+  final String seasonId;
+  final Map<String, int> teamSeedings; // teamId -> seed (1-15 per conference)
+  final Map<String, String> teamConferences; // teamId -> 'east' or 'west'
+  final List<PlayoffSeries> playInGames;
+  final List<PlayoffSeries> firstRound;
+  final List<PlayoffSeries> conferenceSemis;
+  final List<PlayoffSeries> conferenceFinals;
+  final PlayoffSeries? nbаFinals;
+  final String currentRound; // 'play-in', 'first-round', 'conf-semis', 'conf-finals', 'finals', 'complete'
+  
+  List<PlayoffSeries> getCurrentRoundSeries();
+  PlayoffSeries? getUserTeamSeries(String userTeamId);
+  bool isRoundComplete();
+  
+  Map<String, dynamic> toJson();
+  factory PlayoffBracket.fromJson(Map<String, dynamic> json);
+}
+```
+
+#### PlayerPlayoffStats (New Model)
+```dart
+class PlayerPlayoffStats {
+  final String playerId;
+  final int gamesPlayed;
+  final int totalPoints;
+  final int totalRebounds;
+  final int totalAssists;
+  final int totalSteals;
+  final int totalBlocks;
+  final int totalTurnovers;
+  final int totalFieldGoalsMade;
+  final int totalFieldGoalsAttempted;
+  final int totalThreePointersMade;
+  final int totalThreePointersAttempted;
+  final int totalFreeThrowsMade;
+  final int totalFreeThrowsAttempted;
+  
+  double get pointsPerGame;
+  double get reboundsPerGame;
+  double get assistsPerGame;
+  double get fieldGoalPercentage;
+  double get threePointPercentage;
+  double get freeThrowPercentage;
+  
+  void addGameStats(PlayerGameStats gameStats);
+  
+  Map<String, dynamic> toJson();
+  factory PlayerPlayoffStats.fromJson(Map<String, dynamic> json);
+}
+```
+
+#### Season Model Extensions
+```dart
+class Season {
+  // Existing fields...
+  final PlayoffBracket? playoffBracket; // New: playoff tournament structure
+  final Map<String, PlayerPlayoffStats>? playoffStats; // New: playoff stats by playerId
+  final bool isPostSeason; // New: flag indicating if season is in playoffs
+  
+  // New methods
+  void startPostSeason(List<Team> allTeams);
+  void updatePlayoffStats(Map<String, PlayerGameStats> gameStats);
+  PlayerPlayoffStats? getPlayerPlayoffStats(String playerId);
+}
+```
+
+### Post-Season Flow
+
+#### Season Completion Detection
+```dart
+class LeagueService {
+  bool isRegularSeasonComplete(Season season) {
+    return season.games.length >= 82 * 15; // 82 games per team, 30 teams = 1230 total games
+  }
+  
+  void checkAndStartPostSeason(Season season, List<Team> allTeams) {
+    if (isRegularSeasonComplete(season) && !season.isPostSeason) {
+      season.startPostSeason(allTeams);
+      _saveSeasonState(season);
+    }
+  }
+}
+```
+
+#### Playoff Seeding Algorithm
+```dart
+class PlayoffSeeding {
+  static Map<String, int> calculateSeedings(List<Team> teams, Season season) {
+    // Calculate win-loss records for each team
+    final records = <String, int>{};
+    for (var team in teams) {
+      records[team.id] = _calculateWins(team.id, season.games);
+    }
+    
+    // Separate teams by conference (based on team ID or division)
+    final eastTeams = teams.where((t) => _isEasternConference(t)).toList();
+    final westTeams = teams.where((t) => !_isEasternConference(t)).toList();
+    
+    // Sort by wins (descending)
+    eastTeams.sort((a, b) => records[b.id]!.compareTo(records[a.id]!));
+    westTeams.sort((a, b) => records[b.id]!.compareTo(records[a.id]!));
+    
+    // Assign seeds 1-15
+    final seedings = <String, int>{};
+    for (int i = 0; i < eastTeams.length; i++) {
+      seedings[eastTeams[i].id] = i + 1;
+    }
+    for (int i = 0; i < westTeams.length; i++) {
+      seedings[westTeams[i].id] = i + 1;
+    }
+    
+    return seedings;
+  }
+  
+  static bool _isEasternConference(Team team) {
+    // Simple division: first 15 teams alphabetically are East
+    // Or use team.conference field if available
+    final eastCities = ['Atlanta', 'Boston', 'Brooklyn', 'Charlotte', 'Chicago',
+                        'Cleveland', 'Detroit', 'Indiana', 'Miami', 'Milwaukee',
+                        'New York', 'Orlando', 'Philadelphia', 'Toronto', 'Washington'];
+    return eastCities.contains(team.city);
+  }
+}
+```
+
+#### Play-In Tournament Generation
+```dart
+class PlayoffBracketGenerator {
+  static List<PlayoffSeries> generatePlayInGames(
+    Map<String, int> seedings,
+    Map<String, String> conferences,
+  ) {
+    final playInGames = <PlayoffSeries>[];
+    
+    // East play-in games
+    final eastTeams = _getTeamsByConference(seedings, conferences, 'east');
+    playInGames.add(_createSeries(eastTeams[6], eastTeams[7], 'play-in', 'east')); // 7 vs 8
+    playInGames.add(_createSeries(eastTeams[8], eastTeams[9], 'play-in', 'east')); // 9 vs 10
+    
+    // West play-in games
+    final westTeams = _getTeamsByConference(seedings, conferences, 'west');
+    playInGames.add(_createSeries(westTeams[6], westTeams[7], 'play-in', 'west')); // 7 vs 8
+    playInGames.add(_createSeries(westTeams[8], westTeams[9], 'play-in', 'west')); // 9 vs 10
+    
+    return playInGames;
+  }
+  
+  static PlayoffSeries _createSeries(String team1, String team2, String round, String conference) {
+    return PlayoffSeries(
+      id: uuid.v4(),
+      homeTeamId: team1,
+      awayTeamId: team2,
+      homeWins: 0,
+      awayWins: 0,
+      round: round,
+      conference: conference,
+      gameIds: [],
+      isComplete: false,
+    );
+  }
+}
+```
+
+#### Playoff Round Progression
+```dart
+class PlayoffService {
+  void advancePlayoffRound(PlayoffBracket bracket) {
+    if (!bracket.isRoundComplete()) return;
+    
+    switch (bracket.currentRound) {
+      case 'play-in':
+        _resolvePlayInAndGenerateFirstRound(bracket);
+        break;
+      case 'first-round':
+        _generateConferenceSemis(bracket);
+        break;
+      case 'conf-semis':
+        _generateConferenceFinals(bracket);
+        break;
+      case 'conf-finals':
+        _generateNBAFinals(bracket);
+        break;
+      case 'finals':
+        _completePlayoffs(bracket);
+        break;
+    }
+  }
+  
+  void _resolvePlayInAndGenerateFirstRound(PlayoffBracket bracket) {
+    // Resolve play-in games to determine seeds 7 and 8
+    final eastSeed7 = _resolvePlayIn(bracket.playInGames, 'east');
+    final westSeed7 = _resolvePlayIn(bracket.playInGames, 'west');
+    
+    // Generate first round matchups: 1v8, 2v7, 3v6, 4v5
+    bracket.firstRound = _generateFirstRoundSeries(bracket.teamSeedings, eastSeed7, westSeed7);
+    bracket.currentRound = 'first-round';
+  }
+  
+  List<String> _resolvePlayIn(List<PlayoffSeries> playInGames, String conference) {
+    // Find 7v8 and 9v10 games for this conference
+    final game78 = playInGames.firstWhere((s) => 
+      s.conference == conference && _isGame78(s));
+    final game910 = playInGames.firstWhere((s) => 
+      s.conference == conference && _isGame910(s));
+    
+    final winner78 = game78.winnerId!; // Seed 7
+    final loser78 = game78.homeTeamId == winner78 ? game78.awayTeamId : game78.homeTeamId;
+    final winner910 = game910.winnerId!;
+    
+    // Second play-in game: loser of 7v8 vs winner of 9v10
+    final secondGame = _simulateSeries(loser78, winner910, 'play-in', conference, isSingleGame: true);
+    final seed8 = secondGame.winnerId!;
+    
+    return [winner78, seed8];
+  }
+}
+```
+
+### UI Components
+
+#### PlayoffBracketPage (New Page)
+```dart
+class PlayoffBracketPage extends StatelessWidget {
+  final PlayoffBracket bracket;
+  final String userTeamId;
+  
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${_getRoundName(bracket.currentRound)} Playoffs'),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _buildRoundIndicator(),
+            _buildBracketVisualization(),
+            _buildUserTeamStatus(),
+            _buildNextGameButton(),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildBracketVisualization() {
+    return Row(
+      children: [
+        // Eastern Conference bracket
+        Expanded(child: _buildConferenceBracket('east')),
+        // Finals in center
+        _buildFinalsBracket(),
+        // Western Conference bracket
+        Expanded(child: _buildConferenceBracket('west')),
+      ],
+    );
+  }
+  
+  Widget _buildConferenceBracket(String conference) {
+    return Column(
+      children: [
+        Text(conference == 'east' ? 'Eastern Conference' : 'Western Conference'),
+        _buildRoundColumn(bracket.firstRound, conference),
+        _buildRoundColumn(bracket.conferenceSemis, conference),
+        _buildRoundColumn(bracket.conferenceFinals, conference),
+      ],
+    );
+  }
+  
+  Widget _buildSeriesCard(PlayoffSeries series) {
+    return Card(
+      color: _isUserTeamInSeries(series) ? Colors.blue.shade50 : null,
+      child: Padding(
+        padding: EdgeInsets.all(8),
+        child: Column(
+          children: [
+            _buildTeamRow(series.homeTeamId, series.homeWins, isHome: true),
+            Divider(),
+            _buildTeamRow(series.awayTeamId, series.awayWins, isHome: false),
+            if (series.isComplete)
+              Text('Winner: ${_getTeamName(series.winnerId!)}',
+                   style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### HomePage Extensions for Playoffs
+```dart
+class HomePage extends StatelessWidget {
+  Widget _buildSeasonStatus(Season season) {
+    if (season.isPostSeason) {
+      final bracket = season.playoffBracket!;
+      final userSeries = bracket.getUserTeamSeries(userTeamId);
+      
+      return Column(
+        children: [
+          Text('${_getRoundName(bracket.currentRound)}',
+               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          if (userSeries != null) ...[
+            Text('Series: ${userSeries.seriesScore}'),
+            ElevatedButton(
+              onPressed: () => _playNextPlayoffGame(),
+              child: Text('Play Next Playoff Game'),
+            ),
+          ] else ...[
+            Text('Your team has been eliminated'),
+            ElevatedButton(
+              onPressed: () => _viewPlayoffBracket(),
+              child: Text('View Playoff Bracket'),
+            ),
+          ],
+        ],
+      );
+    } else {
+      // Regular season UI (existing)
+      return _buildRegularSeasonStatus(season);
+    }
+  }
+}
+```
+
+#### PlayerProfilePage Extensions
+```dart
+class PlayerProfilePage extends StatelessWidget {
+  Widget _buildStatsSection(Player player, Season season) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          TabBar(
+            tabs: [
+              Tab(text: 'Regular Season'),
+              Tab(text: 'Playoffs'),
+            ],
+          ),
+          TabBarView(
+            children: [
+              _buildSeasonStats(player, season.seasonStats),
+              _buildPlayoffStats(player, season.playoffStats),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildPlayoffStats(Player player, Map<String, PlayerPlayoffStats>? playoffStats) {
+    final stats = playoffStats?[player.id];
+    if (stats == null || stats.gamesPlayed == 0) {
+      return Center(child: Text('No playoff games played'));
+    }
+    
+    return _buildStatsTable(stats);
+  }
+}
+```
+
+### Playoff Game Simulation
+
+Playoff games use the same possession-by-possession simulation as regular season games, but:
+- Results are recorded in PlayoffSeries instead of regular season schedule
+- Statistics are accumulated in PlayerPlayoffStats instead of PlayerSeasonStats
+- Series advances when a team reaches 4 wins
+
+```dart
+class GameService {
+  Game simulatePlayoffGame(Team homeTeam, Team awayTeam, PlayoffSeries series) {
+    // Use existing detailed simulation
+    final game = simulateGameDetailed(homeTeam, awayTeam);
+    
+    // Mark as playoff game
+    game = game.copyWith(isPlayoffGame: true, seriesId: series.id);
+    
+    return game;
+  }
+}
+```
+
+### Data Persistence
+
+Playoff data is stored in the Season model:
+
+```dart
+// Season JSON serialization
+Map<String, dynamic> toJson() {
+  return {
+    // ... existing fields
+    'isPostSeason': isPostSeason,
+    'playoffBracket': playoffBracket?.toJson(),
+    'playoffStats': playoffStats?.map((k, v) => MapEntry(k, v.toJson())),
+  };
+}
+```
+
+### Performance Considerations
+
+- Playoff bracket generation happens once at season end (< 1 second)
+- Non-user playoff games are simulated in batches (all games in a round)
+- Bracket visualization uses efficient widget tree (no complex animations)
+- Playoff stats are calculated incrementally like regular season stats
+
+### Accessibility
+
+- Playoff bracket has semantic structure with proper labels
+- Series scores announced by screen readers
+- Round progression announced accessibly
+- Keyboard navigation for bracket exploration
+- High contrast for completed vs ongoing series
+
 ## Dependencies
 
 **No new dependencies required** - all features use existing packages:

@@ -170,22 +170,87 @@ class PossessionSimulation {
     return lineup.first;
   }
 
+  /// Get modified probability by applying position and role archetype modifiers
+  /// Takes a base probability and applies multiplicative modifiers from position and role
+  double _getModifiedProbability(
+    Player player,
+    String modifierType,
+    double baseProbability,
+  ) {
+    double probability = baseProbability;
+
+    // Apply position-based modifiers
+    probability *= _getPositionModifier(player.position, modifierType);
+
+    // Apply role archetype modifiers
+    final role = player.getRoleArchetype();
+    if (role != null) {
+      final roleModifier = role.gameplayModifiers[modifierType];
+      if (roleModifier != null) {
+        probability *= roleModifier;
+      }
+    }
+
+    // Clamp to valid probability range (0.0 to 100.0)
+    return probability.clamp(0.0, 100.0);
+  }
+
+  /// Get position-based modifier for a specific gameplay type
+  double _getPositionModifier(String position, String modifierType) {
+    switch (modifierType) {
+      case 'assistProbability':
+        return position == 'PG' ? 1.15 : 1.0;
+      case 'threePointAttemptProbability':
+        if (position == 'SG') return 1.20;
+        if (position == 'SF') return 0.95;
+        if (position == 'PF') return 0.60; // Power forwards take fewer threes
+        if (position == 'C') return 0.40; // Centers rarely take threes
+        return 1.0;
+      case 'reboundProbability':
+        if (position == 'PF') return 1.15;
+        if (position == 'C') return 1.25;
+        return 1.0;
+      case 'blockProbability':
+        return position == 'C' ? 1.20 : 1.0;
+      default:
+        return 1.0;
+    }
+  }
+
   /// Determine if shot is a three-pointer based on player's threePoint attribute
   bool _determineShotType(Player shooter) {
     // Higher threePoint attribute = more likely to attempt 3PT
-    // Base 35% chance, +0.3% per threePoint point
-    double threePointChance = 35 + (shooter.threePoint * 0.3);
-    
-    // Position-based modifiers
-    if (shooter.position == 'SG') {
-      // Shooting guards get +20% to three-point attempt probability
-      threePointChance *= 1.20;
-    } else if (shooter.position == 'SF') {
-      // Small forwards balance 2PT and 3PT attempts (slight reduction)
-      threePointChance *= 0.95;
-    }
-    
+    // Reduced base: 15% chance, +0.2% per threePoint point (max ~35% for elite shooters)
+    double baseChance = 15 + (shooter.threePoint * 0.2);
+
+    // Apply position and role modifiers
+    double threePointChance = _getModifiedProbability(
+      shooter,
+      'threePointAttemptProbability',
+      baseChance,
+    );
+
     return _random.nextInt(100) < threePointChance;
+  }
+
+  /// Determine if this is a post shooting attempt (close-range/paint shot)
+  /// vs a perimeter shot based on player attributes and role
+  bool _isPostShootingAttempt(Player shooter, bool isThreePoint) {
+    // Three-pointers are never post shots
+    if (isThreePoint) return false;
+
+    // Base probability based on post shooting attribute
+    // Higher postShooting = more likely to attempt post shots
+    double baseChance = shooter.postShooting * 0.4; // 0-40% base range
+
+    // Apply position and role modifiers
+    double postShootingChance = _getModifiedProbability(
+      shooter,
+      'postShootingAttemptProbability',
+      baseChance,
+    );
+
+    return _random.nextInt(100) < postShootingChance;
   }
 
   /// Attempt a shot and return if it was successful
@@ -195,13 +260,20 @@ class PossessionSimulation {
         defenders.fold<int>(0, (sum, player) => sum + player.defense) /
         defenders.length;
 
+    // Check if this is a post shooting attempt
+    final isPostShot = _isPostShootingAttempt(shooter, isThreePoint);
+
     double successChance;
     if (isThreePoint) {
       // 3PT: base 35% + (threePoint/100 * 10%) - (avgDefense/100 * 5%)
       successChance =
           35 + (shooter.threePoint / 100 * 10) - (avgDefense / 100 * 5);
+    } else if (isPostShot) {
+      // Post shot: base 50% + (postShooting/100 * 20%) - (avgDefense/100 * 8%)
+      successChance =
+          50 + (shooter.postShooting / 100 * 20) - (avgDefense / 100 * 8);
     } else {
-      // 2PT: base 45% + (shooting/100 * 15%) - (avgDefense/100 * 7%)
+      // Regular 2PT: base 45% + (shooting/100 * 15%) - (avgDefense/100 * 7%)
       successChance =
           45 + (shooter.shooting / 100 * 15) - (avgDefense / 100 * 7);
     }
@@ -248,12 +320,14 @@ class PossessionSimulation {
     if (assister == null) return;
 
     // Base 50% assist chance + (passing/100 * 20%)
-    double assistChance = 50 + (assister.passing / 100 * 20);
-    
-    // Position-based modifier: Point guards get +15% to assist probability
-    if (assister.position == 'PG') {
-      assistChance *= 1.15;
-    }
+    double baseChance = 50 + (assister.passing / 100 * 20);
+
+    // Apply position and role modifiers
+    double assistChance = _getModifiedProbability(
+      assister,
+      'assistProbability',
+      baseChance,
+    );
 
     if (_random.nextInt(100) < assistChance) {
       _statsTracker[assister.id]!.assists++;
@@ -288,24 +362,29 @@ class PossessionSimulation {
     _statsTracker[rebounder.id]!.rebounds++;
   }
 
-  /// Calculate position-based rebound modifier
+  /// Calculate position and role-based rebound modifier
   double _getPositionReboundModifier(Player player) {
-    switch (player.position) {
-      case 'PF':
-        return 1.15; // +15% for power forwards
-      case 'C':
-        return 1.25; // +25% for centers
-      default:
-        return 1.0; // No modifier for other positions
-    }
+    // Start with base rebounding value
+    double modifier = player.rebounding.toDouble();
+
+    // Apply position and role modifiers
+    double modifiedValue = _getModifiedProbability(
+      player,
+      'reboundProbability',
+      modifier,
+    );
+
+    // Return as a multiplier relative to base rebounding
+    return modifiedValue / player.rebounding;
   }
 
   /// Select rebounder weighted by rebounding attribute and position
   Player _selectRebounder(List<Player> lineup) {
-    // Calculate total rebounding weight with position modifiers
+    // Calculate total rebounding weight with position and role modifiers
     final totalRebounding = lineup.fold<double>(
       0.0,
-      (sum, player) => sum + (player.rebounding * _getPositionReboundModifier(player)),
+      (sum, player) =>
+          sum + (player.rebounding * _getPositionReboundModifier(player)),
     );
 
     final randomValue = _random.nextDouble() * totalRebounding;
@@ -324,12 +403,19 @@ class PossessionSimulation {
   /// Check if a defender steals the ball
   /// Returns the defender who made the steal, or null if no steal
   Player? _checkSteal(Player ballHandler, List<Player> defenders) {
-    // Select a defender weighted by defense attribute
-    final defender = _selectDefender(defenders);
+    // Select a defender weighted by steals attribute
+    final defender = _selectStealDefender(defenders);
 
-    // Base 8% steal chance + (defense/100 * 5%) - (ballHandling/100 * 4%)
-    final stealChance =
-        8 + (defender.defense / 100 * 5) - (ballHandler.ballHandling / 100 * 4);
+    // Base 8% steal chance + (steals/100 * 5%) - (ballHandling/100 * 4%)
+    double baseChance =
+        8 + (defender.steals / 100 * 5) - (ballHandler.ballHandling / 100 * 4);
+
+    // Apply position and role modifiers
+    double stealChance = _getModifiedProbability(
+      defender,
+      'stealProbability',
+      baseChance,
+    );
 
     final clampedChance = stealChance.clamp(2.0, 15.0);
 
@@ -338,6 +424,29 @@ class PossessionSimulation {
     }
 
     return null;
+  }
+
+  /// Select a defender weighted by steals attribute for steal attempts
+  Player _selectStealDefender(List<Player> defenders) {
+    final totalSteals = defenders.fold<int>(
+      0,
+      (sum, player) => sum + player.steals,
+    );
+
+    // Fallback if all players have 0 steals
+    if (totalSteals == 0) return defenders.first;
+
+    final randomValue = _random.nextInt(totalSteals);
+    int currentWeight = 0;
+
+    for (final player in defenders) {
+      currentWeight += player.steals;
+      if (randomValue < currentWeight) {
+        return player;
+      }
+    }
+
+    return defenders.first;
   }
 
   /// Check if a foul occurs during shot attempt
@@ -380,12 +489,14 @@ class PossessionSimulation {
 
     // Base 6% block chance + (blocks/100 * 8%)
     // Blocks attribute is primary factor for blocking shots
-    double blockChance = 6 + (defender.blocks / 100 * 8);
-    
-    // Position-based modifier: Centers get +20% to block probability
-    if (defender.position == 'C') {
-      blockChance *= 1.20;
-    }
+    double baseChance = 6 + (defender.blocks / 100 * 8);
+
+    // Apply position and role modifiers
+    double blockChance = _getModifiedProbability(
+      defender,
+      'blockProbability',
+      baseChance,
+    );
 
     final clampedChance = blockChance.clamp(3.0, 18.0);
 
@@ -447,7 +558,16 @@ class PossessionSimulation {
 
     // Free throw success based on shooting attribute
     // Base 70% + (shooting/100 * 15%)
-    final freeThrowChance = 70 + (shooter.shooting / 100 * 15);
+    double freeThrowChance = 70 + (shooter.shooting / 100 * 15);
+
+    // Post shooting bonus for Centers and Power Forwards
+    // They often get fouled on post moves and benefit from post shooting skill
+    if (shooter.position == 'C' && !wasThreePointAttempt) {
+      freeThrowChance += (shooter.postShooting / 100 * 8);
+    } else if (shooter.position == 'PF' && !wasThreePointAttempt) {
+      freeThrowChance += (shooter.postShooting / 100 * 6);
+    }
+
     final clampedChance = freeThrowChance.clamp(60.0, 90.0);
 
     for (int i = 0; i < numFreeThrows; i++) {

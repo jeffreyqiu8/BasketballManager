@@ -3,10 +3,13 @@ import '../models/team.dart';
 import '../models/player.dart';
 import '../models/season.dart';
 import '../models/player_season_stats.dart';
+import '../models/role_archetype.dart';
 import '../services/league_service.dart';
 import '../utils/accessibility_utils.dart';
 import '../utils/app_theme.dart';
+import '../utils/role_archetype_registry.dart';
 import '../widgets/star_rating.dart';
+import 'player_profile_page.dart';
 
 /// TeamPage displays a single team's 15 players with lineup management
 /// Allows users to view all player stats and manage starting lineup
@@ -56,6 +59,12 @@ enum _PositionFilter {
   c,
 }
 
+enum _RoleFilter {
+  all,
+  noRole,
+  hasRole,
+}
+
 class _TeamPageState extends State<TeamPage>
     with SingleTickerProviderStateMixin {
   late Team _team;
@@ -73,6 +82,7 @@ class _TeamPageState extends State<TeamPage>
   // Roster organization
   _RosterSortMode _rosterSortMode = _RosterSortMode.lineup;
   _PositionFilter _positionFilter = _PositionFilter.all;
+  _RoleFilter _roleFilter = _RoleFilter.all;
 
   @override
   void initState() {
@@ -467,6 +477,32 @@ class _TeamPageState extends State<TeamPage>
                 ],
               ),
             ],
+            
+            // Role filter
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.work_outline,
+                  size: 20,
+                  color: isDark
+                      ? AppTheme.primaryColorDark
+                      : AppTheme.primaryColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildRoleFilterChip('All Roles', _RoleFilter.all),
+                      _buildRoleFilterChip('No Role', _RoleFilter.noRole),
+                      _buildRoleFilterChip('Has Role', _RoleFilter.hasRole),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -499,12 +535,41 @@ class _TeamPageState extends State<TeamPage>
     );
   }
 
+  Widget _buildRoleFilterChip(String label, _RoleFilter filter) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSelected = _roleFilter == filter;
+
+    return Semantics(
+      label: 'Filter by $label${isSelected ? ', selected' : ''}',
+      button: true,
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          setState(() {
+            _roleFilter = filter;
+          });
+        },
+        selectedColor: (isDark
+                ? AppTheme.primaryColorDark
+                : AppTheme.primaryColor)
+            .withValues(alpha: 0.3),
+        checkmarkColor: isDark
+            ? AppTheme.primaryColorDark
+            : AppTheme.primaryColor,
+      ),
+    );
+  }
+
   /// Build lineup view (starters and bench)
   List<Widget> _buildLineupView() {
-    final starters = _team.players
+    // Apply role filter
+    final filteredPlayers = _applyRoleFilter(_team.players);
+    
+    final starters = filteredPlayers
         .where((p) => _selectedStarterIds.contains(p.id))
         .toList();
-    final bench = _team.players
+    final bench = filteredPlayers
         .where((p) => !_selectedStarterIds.contains(p.id))
         .toList();
 
@@ -512,10 +577,10 @@ class _TeamPageState extends State<TeamPage>
       // Starting Lineup Section
       Semantics(
         label:
-            'Starting lineup section with ${_selectedStarterIds.length} of 5 players selected',
+            'Starting lineup section with ${starters.length} players shown',
         child: _buildSectionHeader(
           context,
-          'Starting Lineup (${_selectedStarterIds.length}/5)',
+          'Starting Lineup (${starters.length})',
           Icons.star,
         ),
       ),
@@ -526,10 +591,10 @@ class _TeamPageState extends State<TeamPage>
       // Bench Section
       Semantics(
         label:
-            'Bench section with ${15 - _selectedStarterIds.length} players',
+            'Bench section with ${bench.length} players shown',
         child: _buildSectionHeader(
           context,
-          'Bench (${15 - _selectedStarterIds.length})',
+          'Bench (${bench.length})',
           Icons.event_seat,
         ),
       ),
@@ -551,9 +616,10 @@ class _TeamPageState extends State<TeamPage>
         continue;
       }
 
-      final positionPlayers = _team.players
-          .where((p) => p.position == position)
-          .toList();
+      // Apply role filter
+      final positionPlayers = _applyRoleFilter(
+        _team.players.where((p) => p.position == position).toList(),
+      );
 
       if (positionPlayers.isEmpty) continue;
 
@@ -591,7 +657,7 @@ class _TeamPageState extends State<TeamPage>
           padding: const EdgeInsets.all(24.0),
           child: Center(
             child: Text(
-              'No players found for selected position',
+              'No players found for selected filters',
               style: const TextStyle(
                 color: AppTheme.textSecondary,
                 fontStyle: FontStyle.italic,
@@ -603,6 +669,18 @@ class _TeamPageState extends State<TeamPage>
     }
 
     return widgets;
+  }
+
+  /// Apply role filter to a list of players
+  List<Player> _applyRoleFilter(List<Player> players) {
+    switch (_roleFilter) {
+      case _RoleFilter.all:
+        return players;
+      case _RoleFilter.noRole:
+        return players.where((p) => p.roleArchetypeId == null).toList();
+      case _RoleFilter.hasRole:
+        return players.where((p) => p.roleArchetypeId != null).toList();
+    }
   }
 
   Widget _buildSeasonStatsTab() {
@@ -883,10 +961,19 @@ class _TeamPageState extends State<TeamPage>
                         children: [
                           Row(
                             children: [
-                              Text(
-                                player.name,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              InkWell(
+                                onTap: () => _navigateToPlayerProfile(player),
+                                child: Text(
+                                  player.name,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                        color: isDark
+                                            ? AppTheme.primaryColorDark
+                                            : AppTheme.primaryColor,
+                                      ),
+                                ),
                               ),
                               const SizedBox(width: 8),
                               // Position badge
@@ -910,6 +997,10 @@ class _TeamPageState extends State<TeamPage>
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 4),
+                              // Role archetype badge
+                              if (player.roleArchetypeId != null)
+                                _buildRoleBadge(player, isDark),
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -1201,10 +1292,19 @@ class _TeamPageState extends State<TeamPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            player.name,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                          InkWell(
+                            onTap: () => _navigateToPlayerProfile(player),
+                            child: Text(
+                              player.name,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline,
+                                    color: isDark
+                                        ? AppTheme.primaryColorDark
+                                        : AppTheme.primaryColor,
+                                  ),
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Wrap(
@@ -1232,6 +1332,9 @@ class _TeamPageState extends State<TeamPage>
                                   ),
                                 ),
                               ),
+                              // Role archetype badge
+                              if (player.roleArchetypeId != null)
+                                _buildRoleBadge(player, isDark),
                               Text(
                                 player.heightFormatted,
                                 style: const TextStyle(
@@ -1274,6 +1377,11 @@ class _TeamPageState extends State<TeamPage>
                 
                 // Position assignment section
                 _buildPositionAssignment(player),
+                
+                const SizedBox(height: 12),
+                
+                // Role selector section
+                _buildRoleSelector(player),
               ],
             ),
           ),
@@ -1283,28 +1391,35 @@ class _TeamPageState extends State<TeamPage>
   }
 
   Widget _buildStatsGrid(Player player) {
+    final currentRole = player.getRoleArchetype();
+    final topAttributes = currentRole != null ? _getTopAttributes(currentRole).toSet() : <String>{};
+    
     final stats = [
-      {'label': 'SHT', 'value': player.shooting, 'fullName': 'Shooting'},
-      {'label': 'DEF', 'value': player.defense, 'fullName': 'Defense'},
-      {'label': 'SPD', 'value': player.speed, 'fullName': 'Speed'},
-      {'label': 'STA', 'value': player.stamina, 'fullName': 'Stamina'},
-      {'label': 'PAS', 'value': player.passing, 'fullName': 'Passing'},
-      {'label': 'REB', 'value': player.rebounding, 'fullName': 'Rebounding'},
+      {'label': 'SHT', 'value': player.shooting, 'fullName': 'Shooting', 'key': 'shooting'},
+      {'label': 'DEF', 'value': player.defense, 'fullName': 'Defense', 'key': 'defense'},
+      {'label': 'SPD', 'value': player.speed, 'fullName': 'Speed', 'key': 'speed'},
+      {'label': 'POST', 'value': player.postShooting, 'fullName': 'Post Shooting', 'key': 'postShooting'},
+      {'label': 'PAS', 'value': player.passing, 'fullName': 'Passing', 'key': 'passing'},
+      {'label': 'REB', 'value': player.rebounding, 'fullName': 'Rebounding', 'key': 'rebounding'},
       {
         'label': 'BH',
         'value': player.ballHandling,
         'fullName': 'Ball Handling',
+        'key': 'ballHandling',
       },
-      {'label': '3PT', 'value': player.threePoint, 'fullName': 'Three Point'},
+      {'label': '3PT', 'value': player.threePoint, 'fullName': 'Three Point', 'key': 'threePoint'},
     ];
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Wrap(
       spacing: 12,
       runSpacing: 8,
       children:
           stats.map((stat) {
+            final isKeyAttribute = topAttributes.contains(stat['key']);
             return Semantics(
-              label: '${stat['fullName']}: ${stat['value']}',
+              label: '${stat['fullName']}: ${stat['value']}${isKeyAttribute ? ', key attribute for role' : ''}',
               child: SizedBox(
                 width: 70,
                 child: Column(
@@ -1318,12 +1433,36 @@ class _TeamPageState extends State<TeamPage>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '${stat['value']}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _getStatColor(stat['value'] as int),
+                    Container(
+                      padding: isKeyAttribute 
+                          ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2)
+                          : null,
+                      decoration: isKeyAttribute
+                          ? BoxDecoration(
+                              color: (isDark
+                                      ? AppTheme.primaryColorDark
+                                      : AppTheme.primaryColor)
+                                  .withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppTheme.primaryColorDark
+                                    : AppTheme.primaryColor,
+                                width: 2,
+                              ),
+                            )
+                          : null,
+                      child: Text(
+                        '${stat['value']}',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isKeyAttribute
+                              ? (isDark
+                                  ? AppTheme.primaryColorDark
+                                  : AppTheme.primaryColor)
+                              : _getStatColor(stat['value'] as int),
+                        ),
                       ),
                     ),
                   ],
@@ -1544,6 +1683,79 @@ class _TeamPageState extends State<TeamPage>
     }
   }
 
+  /// Build role archetype badge with abbreviated name
+  Widget _buildRoleBadge(Player player, bool isDark) {
+    final role = player.getRoleArchetype();
+    if (role == null) return const SizedBox.shrink();
+
+    // Abbreviate role name if too long
+    final displayName = _abbreviateRoleName(role.name);
+    final fitScores = player.getRoleFitScores();
+    final fitScore = fitScores[role.id] ?? 0.0;
+
+    return Semantics(
+      label: 'Role: ${role.name}, ${fitScore.toStringAsFixed(0)}% fit',
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 6,
+          vertical: 2,
+        ),
+        decoration: BoxDecoration(
+          color: _getRoleFitColor(fitScore, isDark).withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: _getRoleFitColor(fitScore, isDark),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.work_outline,
+              size: 10,
+              color: _getRoleFitColor(fitScore, isDark),
+            ),
+            const SizedBox(width: 3),
+            Text(
+              displayName,
+              style: TextStyle(
+                fontSize: 10,
+                color: _getRoleFitColor(fitScore, isDark),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Abbreviate role name for compact display
+  String _abbreviateRoleName(String roleName) {
+    // Map of full names to abbreviations
+    final abbreviations = {
+      'All-Around PG': 'All-Around',
+      'Floor General': 'Floor Gen',
+      'Slashing Playmaker': 'Slasher',
+      'Offensive Point': 'Off Point',
+      'Three-Level Scorer': '3-Level',
+      '3-and-D': '3&D',
+      'Microwave Shooter': 'Microwave',
+      'Point Forward': 'Point Fwd',
+      '3-and-D Wing': '3&D Wing',
+      'Athletic Finisher': 'Athletic',
+      'Playmaking Big': 'Playmaker',
+      'Stretch Four': 'Stretch 4',
+      'Rim Runner': 'Rim Run',
+      'Paint Beast': 'Paint',
+      'Stretch Five': 'Stretch 5',
+      'Standard Center': 'Standard',
+    };
+
+    return abbreviations[roleName] ?? roleName;
+  }
+
   /// Update player position and save changes
   Future<void> _updatePlayerPosition(Player player, String newPosition) async {
     // Create updated player with new position
@@ -1569,6 +1781,242 @@ class _TeamPageState extends State<TeamPage>
       AccessibilityUtils.showAccessibleSuccess(
         context,
         '${player.name} position changed to $newPosition',
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
+  /// Navigate to player profile page
+  void _navigateToPlayerProfile(Player player) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlayerProfilePage(
+          player: player,
+          teamPlayers: _team.players,
+          season: widget.season,
+          leagueService: widget.leagueService,
+          teamId: _team.id,
+        ),
+      ),
+    );
+  }
+
+  /// Build role selector widget that displays current role and dropdown
+  Widget _buildRoleSelector(Player player) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final archetypes = RoleArchetypeRegistry.getArchetypesForPosition(player.position);
+    final fitScores = player.getRoleFitScores();
+    final currentRole = player.getRoleArchetype();
+
+    // If no archetypes available for position, don't show selector
+    if (archetypes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header with role selector dropdown
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Role',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: isDark
+                    ? AppTheme.textPrimaryDark
+                    : AppTheme.textPrimaryLight,
+              ),
+            ),
+            // Role selector dropdown
+            Semantics(
+              label:
+                  'Change role for ${player.name}. Current role: ${currentRole?.name ?? "None"}',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: isDark
+                        ? AppTheme.primaryColorDark
+                        : AppTheme.primaryColor,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButton<String?>(
+                  value: player.roleArchetypeId,
+                  underline: Container(),
+                  isDense: true,
+                  hint: Text(
+                    'Select Role',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  items: [
+                    // Option to clear role
+                    DropdownMenuItem<String?>(
+                      value: null,
+                      child: Semantics(
+                        label: 'No role assigned',
+                        child: Text(
+                          'None',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // All available archetypes for this position
+                    ...archetypes.map((archetype) {
+                      final fitScore = fitScores[archetype.id] ?? 0.0;
+                      return DropdownMenuItem<String?>(
+                        value: archetype.id,
+                        child: Semantics(
+                          label:
+                              '${archetype.name}, ${fitScore.toStringAsFixed(0)}% fit',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Role name
+                              Flexible(
+                                child: Text(
+                                  archetype.name,
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // Fit indicator
+                              _buildFitIndicator(fitScore, isDark),
+                              const SizedBox(width: 4),
+                              // Fit percentage
+                              Text(
+                                '${fitScore.toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: _getRoleFitColor(fitScore, isDark),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                  onChanged: (newRoleId) {
+                    if (newRoleId != player.roleArchetypeId) {
+                      _updatePlayerRole(player, newRoleId);
+                    }
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+
+
+      ],
+    );
+  }
+
+  /// Build fit indicator widget with color coding
+  /// Green for 80+, yellow for 60-79, red for <60
+  Widget _buildFitIndicator(double fitScore, bool isDark) {
+    final color = _getRoleFitColor(fitScore, isDark);
+    return Container(
+      width: 32,
+      height: 6,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(3),
+      ),
+    );
+  }
+
+  /// Get color for role fit score
+  /// Green for 80+, yellow for 60-79, red for <60
+  Color _getRoleFitColor(double fitScore, bool isDark) {
+    if (fitScore >= 80) {
+      return isDark ? AppTheme.successColorDark : AppTheme.successColor;
+    } else if (fitScore >= 60) {
+      return isDark ? Colors.amber[300]! : Colors.amber[700]!;
+    } else {
+      return isDark ? AppTheme.errorColorDark : AppTheme.errorColor;
+    }
+  }
+
+  /// Get top 3 attributes for a role archetype
+  List<String> _getTopAttributes(RoleArchetype role) {
+    final sortedAttributes = role.attributeWeights.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sortedAttributes.take(3).map((e) => e.key).toList();
+  }
+
+  /// Format attribute name for display
+  String _formatAttributeName(String attribute) {
+    switch (attribute) {
+      case 'shooting':
+        return 'Shooting';
+      case 'threePoint':
+        return '3PT';
+      case 'passing':
+        return 'Passing';
+      case 'ballHandling':
+        return 'Ball Handling';
+      case 'postShooting':
+        return 'Post';
+      case 'defense':
+        return 'Defense';
+      case 'steals':
+        return 'Steals';
+      case 'blocks':
+        return 'Blocks';
+      case 'rebounding':
+        return 'Rebounding';
+      case 'speed':
+        return 'Speed';
+      case 'stamina':
+        return 'Stamina';
+      default:
+        return attribute;
+    }
+  }
+
+  /// Update player role and save changes
+  Future<void> _updatePlayerRole(Player player, String? newRoleId) async {
+    // Create updated player with new role
+    final updatedPlayer = player.copyWithRoleArchetype(newRoleId);
+
+    // Update player in team's player list
+    final updatedPlayers = _team.players.map((p) {
+      return p.id == player.id ? updatedPlayer : p;
+    }).toList();
+
+    // Create updated team
+    final updatedTeam = _team.copyWith(players: updatedPlayers);
+
+    // Save to league service
+    await widget.leagueService.updateTeam(updatedTeam);
+
+    // Update local state
+    setState(() {
+      _team = updatedTeam;
+    });
+
+    if (mounted) {
+      final roleName = newRoleId != null
+          ? RoleArchetypeRegistry.getArchetypeById(newRoleId)?.name ?? 'Unknown'
+          : 'None';
+      AccessibilityUtils.showAccessibleSuccess(
+        context,
+        '${player.name} role changed to $roleName',
         duration: const Duration(seconds: 2),
       );
     }

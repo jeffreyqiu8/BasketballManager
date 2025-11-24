@@ -1,6 +1,7 @@
 import 'dart:math';
 import '../models/game.dart';
 import '../models/team.dart';
+import '../models/playoff_series.dart';
 import 'possession_simulation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -104,5 +105,34 @@ class GameService {
     }
 
     return schedule;
+  }
+
+  /// Simulate a playoff game between two teams
+  /// Uses existing simulateGameDetailed for possession simulation
+  /// Marks game as playoff game with seriesId reference
+  /// Returns Game object with playoff metadata and box score
+  /// 
+  /// Requirements: 23.1, 23.2, 23.3, 23.4, 27.1
+  Game simulatePlayoffGame(Team homeTeam, Team awayTeam, PlayoffSeries series) {
+    // Use existing detailed simulation for possession-by-possession gameplay
+    final game = simulateGameDetailed(homeTeam, awayTeam);
+    
+    // Mark as playoff game with series reference
+    return game.copyWith(
+      isPlayoffGame: true,
+      seriesId: series.id,
+    );
+  }
+
+  /// Update playoff series with game result
+  /// Increments homeWins or awayWins based on winner
+  /// Checks if series is complete (team reaches 4 wins)
+  /// Returns updated PlayoffSeries
+  PlayoffSeries updateSeriesWithResult(PlayoffSeries series, Game game) {
+    // Determine winner
+    final winnerTeamId = game.homeTeamWon ? game.homeTeamId : game.awayTeamId;
+    
+    // Update series with game result
+    return series.copyWithGameResult(game.id, winnerTeamId);
   }
 }

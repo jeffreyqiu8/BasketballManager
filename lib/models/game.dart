@@ -11,6 +11,8 @@ class Game {
   final bool isPlayed;
   final DateTime scheduledDate;
   final Map<String, PlayerGameStats>? boxScore; // Optional: player stats by playerId
+  final bool isPlayoffGame; // Whether this is a playoff game
+  final String? seriesId; // Reference to PlayoffSeries if this is a playoff game
 
   Game({
     required this.id,
@@ -21,6 +23,8 @@ class Game {
     required this.isPlayed,
     required this.scheduledDate,
     this.boxScore,
+    this.isPlayoffGame = false,
+    this.seriesId,
   });
 
   /// Check if the home team won
@@ -46,6 +50,8 @@ class Game {
       'isPlayed': isPlayed,
       'scheduledDate': scheduledDate.toIso8601String(),
       'boxScore': boxScore?.map((key, value) => MapEntry(key, value.toJson())),
+      'isPlayoffGame': isPlayoffGame,
+      'seriesId': seriesId,
     };
   }
 
@@ -68,6 +74,8 @@ class Game {
       isPlayed: json['isPlayed'] as bool,
       scheduledDate: DateTime.parse(json['scheduledDate'] as String),
       boxScore: boxScore,
+      isPlayoffGame: json['isPlayoffGame'] as bool? ?? false,
+      seriesId: json['seriesId'] as String?,
     );
   }
 
@@ -81,6 +89,8 @@ class Game {
     bool? isPlayed,
     DateTime? scheduledDate,
     Map<String, PlayerGameStats>? boxScore,
+    bool? isPlayoffGame,
+    String? seriesId,
   }) {
     return Game(
       id: id ?? this.id,
@@ -91,6 +101,8 @@ class Game {
       isPlayed: isPlayed ?? this.isPlayed,
       scheduledDate: scheduledDate ?? this.scheduledDate,
       boxScore: boxScore ?? this.boxScore,
+      isPlayoffGame: isPlayoffGame ?? this.isPlayoffGame,
+      seriesId: seriesId ?? this.seriesId,
     );
   }
 

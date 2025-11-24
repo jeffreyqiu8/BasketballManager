@@ -4,6 +4,8 @@ import '../models/team.dart';
 import '../models/season.dart';
 import '../models/player.dart';
 import '../models/player_game_stats.dart';
+import '../models/playoff_bracket.dart';
+import '../models/playoff_series.dart';
 import '../services/game_service.dart';
 import '../services/league_service.dart';
 import '../utils/accessibility_utils.dart';
@@ -76,39 +78,108 @@ class _GamePageState extends State<GamePage> {
     final homeTeam = isUserHome ? _userTeam! : _opponentTeam!;
     final awayTeam = isUserHome ? _opponentTeam! : _userTeam!;
 
-    // Simulate the game with detailed possession-by-possession simulation
-    final simulatedGame = _gameService.simulateGameDetailed(homeTeam, awayTeam);
+    // Check if this is a playoff game
+    final isPlayoffGame = _season.isPostSeason && _season.playoffBracket != null;
+    
+    Game simulatedGame;
+    if (isPlayoffGame) {
+      // Get the user's current playoff series
+      final userSeries = _season.playoffBracket!.getUserTeamSeries(widget.userTeamId);
+      if (userSeries != null) {
+        // Simulate playoff game with series reference
+        simulatedGame = _gameService.simulatePlayoffGame(homeTeam, awayTeam, userSeries);
+      } else {
+        // Fallback to regular simulation if no series found
+        simulatedGame = _gameService.simulateGameDetailed(homeTeam, awayTeam);
+      }
+    } else {
+      // Regular season game
+      simulatedGame = _gameService.simulateGameDetailed(homeTeam, awayTeam);
+    }
     
     // Small delay to show loading state
     await Future.delayed(const Duration(milliseconds: 500));
     
-    // Update the game in the season
-    final gameIndex = _season.games.indexWhere((g) => g.id == _currentGame!.id);
-    if (gameIndex != -1) {
-      final updatedGames = List<Game>.from(_season.games);
-      updatedGames[gameIndex] = simulatedGame;
-      _season = _season.copyWith(games: updatedGames);
-      
-      // Update season statistics with game stats (only for user's team players)
-      if (simulatedGame.boxScore != null && simulatedGame.boxScore!.isNotEmpty) {
-        // Filter box score to only include user's team players
-        final userTeamStats = <String, PlayerGameStats>{};
-        for (var entry in simulatedGame.boxScore!.entries) {
-          // Check if player belongs to user's team
-          if (_userTeam!.players.any((p) => p.id == entry.key)) {
-            userTeamStats[entry.key] = entry.value;
-          }
-        }
-        
-        // Update season stats with user team's game stats
-        if (userTeamStats.isNotEmpty) {
-          _season = _season.updateSeasonStats(userTeamStats);
+    // Update the game in the season (for regular season)
+    if (!isPlayoffGame) {
+      final gameIndex = _season.games.indexWhere((g) => g.id == _currentGame!.id);
+      if (gameIndex != -1) {
+        final updatedGames = List<Game>.from(_season.games);
+        updatedGames[gameIndex] = simulatedGame;
+        _season = _season.copyWith(games: updatedGames);
+      }
+    }
+    
+    // Update statistics with game stats (only for user's team players)
+    if (simulatedGame.boxScore != null && simulatedGame.boxScore!.isNotEmpty) {
+      // Filter box score to only include user's team players
+      final userTeamStats = <String, PlayerGameStats>{};
+      for (var entry in simulatedGame.boxScore!.entries) {
+        // Check if player belongs to user's team
+        if (_userTeam!.players.any((p) => p.id == entry.key)) {
+          userTeamStats[entry.key] = entry.value;
         }
       }
       
-      // Notify parent of season update
-      widget.onSeasonUpdate(_season);
+      // Update appropriate stats based on game type
+      if (userTeamStats.isNotEmpty) {
+        if (isPlayoffGame) {
+          _season = _season.updatePlayoffStats(userTeamStats);
+        } else {
+          _season = _season.updateSeasonStats(userTeamStats);
+        }
+      }
     }
+    
+    // Update playoff bracket if this was a playoff game
+    if (isPlayoffGame && _season.playoffBracket != null) {
+      final userSeries = _season.playoffBracket!.getUserTeamSeries(widget.userTeamId);
+      if (userSeries != null) {
+        // Update the series with the game result
+        final updatedSeries = _gameService.updateSeriesWithResult(userSeries, simulatedGame);
+        
+        // Update the bracket with the updated series
+        var updatedBracket = _updateBracketWithSeries(_season.playoffBracket!, updatedSeries);
+        
+        // Check if the series is complete
+        if (updatedSeries.isComplete) {
+          final won = updatedSeries.winnerId == widget.userTeamId;
+          final seriesAnnouncement = won
+              ? 'Series complete! You won ${updatedSeries.seriesScore}'
+              : 'Series complete! You lost ${updatedSeries.seriesScore}';
+          
+          if (mounted) {
+            AccessibilityUtils.showAccessibleInfo(
+              context,
+              seriesAnnouncement,
+              duration: const Duration(seconds: 3),
+            );
+          }
+        }
+        
+        // Check if the current round is complete and advance if needed
+        if (updatedBracket.isRoundComplete()) {
+          final currentRound = updatedBracket.currentRound;
+          updatedBracket = widget.leagueService.advancePlayoffRound(updatedBracket);
+          
+          // Show notification about advancing to next round
+          if (updatedBracket.currentRound != currentRound && mounted) {
+            final nextRoundName = _getRoundName(updatedBracket.currentRound);
+            AccessibilityUtils.showAccessibleSuccess(
+              context,
+              'Advancing to $nextRoundName!',
+              duration: const Duration(seconds: 4),
+            );
+          }
+        }
+        
+        // Update the season with the new bracket
+        _season = _season.updatePlayoffBracket(updatedBracket);
+      }
+    }
+    
+    // Notify parent of season update
+    widget.onSeasonUpdate(_season);
     
     setState(() {
       _lastPlayedGame = simulatedGame;
@@ -125,16 +196,17 @@ class _GamePageState extends State<GamePage> {
           : simulatedGame.homeScore;
       
       final won = userScore! > opponentScore!;
+      final gameType = isPlayoffGame ? 'Playoff game' : 'Game';
       final announcement = won 
-          ? 'Game complete. You won $userScore to $opponentScore'
-          : 'Game complete. You lost $userScore to $opponentScore';
+          ? '$gameType complete. You won $userScore to $opponentScore'
+          : '$gameType complete. You lost $userScore to $opponentScore';
       
       // Use accessible announcement
       AccessibilityUtils.announce(context, announcement);
       AccessibilityUtils.showAccessibleInfo(context, announcement);
       
-      // Check if season is complete
-      if (_season.isComplete) {
+      // Check if regular season is complete
+      if (!isPlayoffGame && _season.isComplete) {
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
             final seasonCompleteMsg = 'Season Complete! Final Record: ${_season.wins} wins, ${_season.losses} losses';
@@ -146,6 +218,119 @@ class _GamePageState extends State<GamePage> {
           }
         });
       }
+    }
+  }
+  
+  /// Update the playoff bracket with an updated series
+  /// This helper method updates the appropriate round in the bracket
+  PlayoffBracket _updateBracketWithSeries(PlayoffBracket bracket, PlayoffSeries updatedSeries) {
+    // Create a map for quick lookup
+    final seriesMap = {updatedSeries.id: updatedSeries};
+    
+    // Update the appropriate round based on current round
+    switch (bracket.currentRound) {
+      case 'play-in':
+        final updatedPlayInGames = bracket.playInGames.map((series) {
+          return seriesMap[series.id] ?? series;
+        }).toList();
+        return PlayoffBracket(
+          seasonId: bracket.seasonId,
+          teamSeedings: bracket.teamSeedings,
+          teamConferences: bracket.teamConferences,
+          playInGames: updatedPlayInGames,
+          firstRound: bracket.firstRound,
+          conferenceSemis: bracket.conferenceSemis,
+          conferenceFinals: bracket.conferenceFinals,
+          nbaFinals: bracket.nbaFinals,
+          currentRound: bracket.currentRound,
+        );
+
+      case 'first-round':
+        final updatedFirstRound = bracket.firstRound.map((series) {
+          return seriesMap[series.id] ?? series;
+        }).toList();
+        return PlayoffBracket(
+          seasonId: bracket.seasonId,
+          teamSeedings: bracket.teamSeedings,
+          teamConferences: bracket.teamConferences,
+          playInGames: bracket.playInGames,
+          firstRound: updatedFirstRound,
+          conferenceSemis: bracket.conferenceSemis,
+          conferenceFinals: bracket.conferenceFinals,
+          nbaFinals: bracket.nbaFinals,
+          currentRound: bracket.currentRound,
+        );
+
+      case 'conf-semis':
+        final updatedConferenceSemis = bracket.conferenceSemis.map((series) {
+          return seriesMap[series.id] ?? series;
+        }).toList();
+        return PlayoffBracket(
+          seasonId: bracket.seasonId,
+          teamSeedings: bracket.teamSeedings,
+          teamConferences: bracket.teamConferences,
+          playInGames: bracket.playInGames,
+          firstRound: bracket.firstRound,
+          conferenceSemis: updatedConferenceSemis,
+          conferenceFinals: bracket.conferenceFinals,
+          nbaFinals: bracket.nbaFinals,
+          currentRound: bracket.currentRound,
+        );
+
+      case 'conf-finals':
+        final updatedConferenceFinals = bracket.conferenceFinals.map((series) {
+          return seriesMap[series.id] ?? series;
+        }).toList();
+        return PlayoffBracket(
+          seasonId: bracket.seasonId,
+          teamSeedings: bracket.teamSeedings,
+          teamConferences: bracket.teamConferences,
+          playInGames: bracket.playInGames,
+          firstRound: bracket.firstRound,
+          conferenceSemis: bracket.conferenceSemis,
+          conferenceFinals: updatedConferenceFinals,
+          nbaFinals: bracket.nbaFinals,
+          currentRound: bracket.currentRound,
+        );
+
+      case 'finals':
+        final updatedNbaFinals = bracket.nbaFinals != null && seriesMap.containsKey(bracket.nbaFinals!.id)
+            ? seriesMap[bracket.nbaFinals!.id]
+            : bracket.nbaFinals;
+        return PlayoffBracket(
+          seasonId: bracket.seasonId,
+          teamSeedings: bracket.teamSeedings,
+          teamConferences: bracket.teamConferences,
+          playInGames: bracket.playInGames,
+          firstRound: bracket.firstRound,
+          conferenceSemis: bracket.conferenceSemis,
+          conferenceFinals: bracket.conferenceFinals,
+          nbaFinals: updatedNbaFinals,
+          currentRound: bracket.currentRound,
+        );
+
+      default:
+        return bracket;
+    }
+  }
+  
+  /// Get human-readable round name
+  String _getRoundName(String round) {
+    switch (round) {
+      case 'play-in':
+        return 'Play-In Tournament';
+      case 'first-round':
+        return 'First Round';
+      case 'conf-semis':
+        return 'Conference Semifinals';
+      case 'conf-finals':
+        return 'Conference Finals';
+      case 'finals':
+        return 'NBA Finals';
+      case 'complete':
+        return 'Season Complete';
+      default:
+        return 'Playoffs';
     }
   }
 

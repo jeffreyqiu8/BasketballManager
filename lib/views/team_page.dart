@@ -3,6 +3,7 @@ import '../models/team.dart';
 import '../models/player.dart';
 import '../models/season.dart';
 import '../models/player_season_stats.dart';
+import '../models/player_playoff_stats.dart';
 import '../models/role_archetype.dart';
 import '../services/league_service.dart';
 import '../utils/accessibility_utils.dart';
@@ -88,7 +89,7 @@ class _TeamPageState extends State<TeamPage>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
       initialIndex: widget.initialTab,
     );
@@ -217,12 +218,23 @@ class _TeamPageState extends State<TeamPage>
                 text: 'Season Stats',
               ),
             ),
+            Semantics(
+              label: 'Playoff statistics tab, view player playoff statistics',
+              child: const Tab(
+                icon: Icon(Icons.emoji_events),
+                text: 'Playoff Stats',
+              ),
+            ),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [_buildRosterTab(), _buildSeasonStatsTab()],
+        children: [
+          _buildRosterTab(),
+          _buildSeasonStatsTab(),
+          _buildPlayoffStatsTab(),
+        ],
       ),
     );
   }
@@ -921,6 +933,351 @@ class _TeamPageState extends State<TeamPage>
               tooltip: _sortAscending ? 'Ascending' : 'Descending',
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayoffStatsTab() {
+    if (widget.season == null ||
+        widget.season!.playoffStats == null ||
+        widget.season!.playoffStats!.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.emoji_events, size: 64, color: AppTheme.textSecondary),
+              const SizedBox(height: 16),
+              Semantics(
+                label:
+                    'No playoff data available. Team has not made the playoffs yet.',
+                child: const Text(
+                  'No playoff data available.\nTeam has not made the playoffs yet.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Get playoff stats for team players
+    final playerStats = <String, PlayerPlayoffStats>{};
+    for (var player in _team.players) {
+      final stats = widget.season!.getPlayerPlayoffStats(player.id);
+      if (stats != null && stats.gamesPlayed > 0) {
+        playerStats[player.id] = stats;
+      }
+    }
+
+    if (playerStats.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.emoji_events, size: 64, color: AppTheme.textSecondary),
+              const SizedBox(height: 16),
+              Semantics(
+                label:
+                    'No playoff statistics for team players yet. Play playoff games to see player statistics.',
+                child: const Text(
+                  'No playoff statistics for team players yet.\nPlay playoff games to see player statistics.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Sort players by selected column (reuse same sorting logic as season stats)
+    final sortedPlayerIds = playerStats.keys.toList();
+    sortedPlayerIds.sort((a, b) {
+      final statsA = playerStats[a]!;
+      final statsB = playerStats[b]!;
+      final playerA = _team.players.firstWhere((p) => p.id == a);
+      final playerB = _team.players.firstWhere((p) => p.id == b);
+
+      int comparison = 0;
+      switch (_sortColumn) {
+        case _SortColumn.name:
+          comparison = playerA.name.compareTo(playerB.name);
+          break;
+        case _SortColumn.ppg:
+          comparison = statsA.pointsPerGame.compareTo(statsB.pointsPerGame);
+          break;
+        case _SortColumn.rpg:
+          comparison = statsA.reboundsPerGame.compareTo(statsB.reboundsPerGame);
+          break;
+        case _SortColumn.apg:
+          comparison = statsA.assistsPerGame.compareTo(statsB.assistsPerGame);
+          break;
+        case _SortColumn.fgPercentage:
+          comparison = statsA.fieldGoalPercentage.compareTo(
+            statsB.fieldGoalPercentage,
+          );
+          break;
+        case _SortColumn.threePointPercentage:
+          comparison = statsA.threePointPercentage.compareTo(
+            statsB.threePointPercentage,
+          );
+          break;
+        case _SortColumn.turnoversPerGame:
+          comparison = statsA.turnoversPerGame.compareTo(
+            statsB.turnoversPerGame,
+          );
+          break;
+        case _SortColumn.stealsPerGame:
+          comparison = statsA.stealsPerGame.compareTo(statsB.stealsPerGame);
+          break;
+        case _SortColumn.blocksPerGame:
+          comparison = statsA.blocksPerGame.compareTo(statsB.blocksPerGame);
+          break;
+        case _SortColumn.foulsPerGame:
+          comparison = statsA.foulsPerGame.compareTo(statsB.foulsPerGame);
+          break;
+        case _SortColumn.freeThrowPercentage:
+          comparison = statsA.freeThrowPercentage.compareTo(
+            statsB.freeThrowPercentage,
+          );
+          break;
+      }
+
+      return _sortAscending ? comparison : -comparison;
+    });
+
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Semantics(
+              label: 'Playoff statistics for ${_team.city} ${_team.name}',
+              child: _buildSectionHeader(
+                context,
+                'Playoff Statistics',
+                Icons.emoji_events,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Sort controls
+            _buildSortControls(),
+            const SizedBox(height: 16),
+
+            // Statistics cards
+            ...sortedPlayerIds.map((playerId) {
+              final player = _team.players.firstWhere((p) => p.id == playerId);
+              final stats = playerStats[playerId]!;
+              return _buildPlayerPlayoffStatsCard(player, stats);
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerPlayoffStatsCard(Player player, PlayerPlayoffStats stats) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isExpanded = _expandedPlayerIds.contains(player.id);
+
+    return Semantics(
+      label:
+          '${player.name}, ${player.position} position, ${stats.pointsPerGame.toStringAsFixed(1)} points per game in playoffs, ${stats.reboundsPerGame.toStringAsFixed(1)} rebounds, ${stats.assistsPerGame.toStringAsFixed(1)} assists. Tap to ${isExpanded ? 'collapse' : 'expand'} details',
+      button: true,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: AppTheme.cardElevationMedium,
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              if (isExpanded) {
+                _expandedPlayerIds.remove(player.id);
+              } else {
+                _expandedPlayerIds.add(player.id);
+              }
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row with name and key stats
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              InkWell(
+                                onTap: () => _navigateToPlayerProfile(player),
+                                child: Text(
+                                  player.name,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        decoration: TextDecoration.underline,
+                                        color: isDark
+                                            ? AppTheme.primaryColorDark
+                                            : AppTheme.primaryColor,
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Position badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppTheme.primaryColorDark
+                                      : AppTheme.primaryColor,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  player.position,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              // Role archetype badge
+                              if (player.roleArchetypeId != null)
+                                _buildRoleBadge(player, isDark),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${stats.gamesPlayed} Playoff Games',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color:
+                          isDark
+                              ? AppTheme.primaryColorDark
+                              : AppTheme.primaryColor,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Primary stats (always visible)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem(
+                      'PPG',
+                      stats.pointsPerGame.toStringAsFixed(1),
+                      stats.pointsPerGame >= 20.0,
+                      isDark,
+                    ),
+                    _buildStatItem(
+                      'RPG',
+                      stats.reboundsPerGame.toStringAsFixed(1),
+                      stats.reboundsPerGame >= 10.0,
+                      isDark,
+                    ),
+                    _buildStatItem(
+                      'APG',
+                      stats.assistsPerGame.toStringAsFixed(1),
+                      stats.assistsPerGame >= 8.0,
+                      isDark,
+                    ),
+                  ],
+                ),
+
+                // Expanded details
+                if (isExpanded) ...[
+                  const Divider(height: 24),
+
+                  // Shooting stats
+                  _buildStatSection('Shooting', [
+                    _buildDetailStatRow(
+                      'FG%',
+                      '${stats.fieldGoalPercentage.toStringAsFixed(1)}%',
+                      stats.fieldGoalPercentage >= 50.0,
+                      isDark,
+                    ),
+                    _buildDetailStatRow(
+                      '3PT%',
+                      '${stats.threePointPercentage.toStringAsFixed(1)}%',
+                      stats.threePointPercentage >= 40.0,
+                      isDark,
+                    ),
+                    _buildDetailStatRow(
+                      'FT%',
+                      '${stats.freeThrowPercentage.toStringAsFixed(1)}%',
+                      stats.freeThrowPercentage >= 80.0,
+                      isDark,
+                    ),
+                  ]),
+
+                  const SizedBox(height: 12),
+
+                  // Defense stats
+                  _buildStatSection('Defense', [
+                    _buildDetailStatRow(
+                      'SPG',
+                      stats.stealsPerGame.toStringAsFixed(1),
+                      stats.stealsPerGame >= 2.0,
+                      isDark,
+                    ),
+                    _buildDetailStatRow(
+                      'BPG',
+                      stats.blocksPerGame.toStringAsFixed(1),
+                      stats.blocksPerGame >= 1.5,
+                      isDark,
+                    ),
+                  ]),
+
+                  const SizedBox(height: 12),
+
+                  // Other stats
+                  _buildStatSection('Other', [
+                    _buildDetailStatRow(
+                      'TPG',
+                      stats.turnoversPerGame.toStringAsFixed(1),
+                      stats.turnoversPerGame >= 3.0,
+                      isDark,
+                      isNegative: true,
+                    ),
+                    _buildDetailStatRow(
+                      'FPG',
+                      stats.foulsPerGame.toStringAsFixed(1),
+                      stats.foulsPerGame >= 4.0,
+                      isDark,
+                      isNegative: true,
+                    ),
+                  ]),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

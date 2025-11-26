@@ -11,6 +11,9 @@ class PlayoffBracketGenerator {
   /// - Eastern Conference: 7 vs 8 seed, 9 vs 10 seed
   /// - Western Conference: 7 vs 8 seed, 9 vs 10 seed
   /// 
+  /// Only teams seeded 7-10 qualify for the play-in tournament.
+  /// Teams seeded 11-15 have missed the playoffs entirely.
+  /// 
   /// Requirements: 22.1, 22.2, 22.3
   static List<PlayoffSeries> generatePlayInGames(
     Map<String, int> seedings,
@@ -21,6 +24,20 @@ class PlayoffBracketGenerator {
     // Get teams by conference and seed
     final eastTeams = _getTeamsByConferenceAndSeed(seedings, conferences, 'east');
     final westTeams = _getTeamsByConferenceAndSeed(seedings, conferences, 'west');
+
+    // Validate that seeds 7-10 exist for Eastern Conference
+    if (!eastTeams.containsKey(7) || !eastTeams.containsKey(8) ||
+        !eastTeams.containsKey(9) || !eastTeams.containsKey(10)) {
+      throw StateError(
+          'Eastern Conference must have teams seeded 7-10 for play-in tournament');
+    }
+
+    // Validate that seeds 7-10 exist for Western Conference
+    if (!westTeams.containsKey(7) || !westTeams.containsKey(8) ||
+        !westTeams.containsKey(9) || !westTeams.containsKey(10)) {
+      throw StateError(
+          'Western Conference must have teams seeded 7-10 for play-in tournament');
+    }
 
     // Eastern Conference play-in games
     // 7 vs 8 seed matchup

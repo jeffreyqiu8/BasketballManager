@@ -4,6 +4,7 @@ import 'player_game_stats.dart';
 import 'player_playoff_stats.dart';
 import 'playoff_bracket.dart';
 import 'championship_record.dart';
+import 'league_schedule.dart';
 
 /// Season model with 82-game tracking
 /// Manages season progression and statistics for the user's team
@@ -17,6 +18,7 @@ class Season {
   final Map<String, PlayerPlayoffStats>? playoffStats; // Playoff stats by playerId
   final bool isPostSeason; // Whether the season is in post-season mode
   final ChampionshipRecord? championshipRecord; // Championship record if playoffs completed
+  final LeagueSchedule? leagueSchedule; // League-wide schedule for all 30 teams
 
   Season({
     required this.id,
@@ -28,6 +30,7 @@ class Season {
     this.playoffStats,
     this.isPostSeason = false,
     this.championshipRecord,
+    this.leagueSchedule,
   }) : assert(games.length == 82, 'Season must have exactly 82 games');
 
   /// Get number of games played
@@ -206,6 +209,7 @@ class Season {
       'playoffStats': playoffStats?.map((key, value) => MapEntry(key, value.toJson())),
       'isPostSeason': isPostSeason,
       'championshipRecord': championshipRecord?.toJson(),
+      'leagueSchedule': leagueSchedule?.toJson(),
     };
   }
 
@@ -249,6 +253,11 @@ class Season {
     if (json.containsKey('championshipRecord') && json['championshipRecord'] != null) {
       championshipRecord = ChampionshipRecord.fromJson(json['championshipRecord'] as Map<String, dynamic>);
     }
+
+    LeagueSchedule? leagueSchedule;
+    if (json.containsKey('leagueSchedule') && json['leagueSchedule'] != null) {
+      leagueSchedule = LeagueSchedule.fromJson(json['leagueSchedule'] as Map<String, dynamic>);
+    }
     
     return Season(
       id: json['id'] as String,
@@ -262,6 +271,7 @@ class Season {
       playoffStats: playoffStats,
       isPostSeason: isPostSeason,
       championshipRecord: championshipRecord,
+      leagueSchedule: leagueSchedule,
     );
   }
 
@@ -276,6 +286,7 @@ class Season {
     Map<String, PlayerPlayoffStats>? playoffStats,
     bool? isPostSeason,
     ChampionshipRecord? championshipRecord,
+    LeagueSchedule? leagueSchedule,
   }) {
     return Season(
       id: id ?? this.id,
@@ -287,6 +298,8 @@ class Season {
       playoffStats: playoffStats ?? this.playoffStats,
       isPostSeason: isPostSeason ?? this.isPostSeason,
       championshipRecord: championshipRecord ?? this.championshipRecord,
+      leagueSchedule: leagueSchedule ?? this.leagueSchedule,
     );
   }
 }
+

@@ -8,6 +8,7 @@ import '../models/playoff_bracket.dart';
 import '../models/playoff_series.dart';
 import '../services/game_service.dart';
 import '../services/league_service.dart';
+import '../services/playoff_service.dart';
 import '../utils/accessibility_utils.dart';
 import '../utils/app_theme.dart';
 import '../widgets/loading_indicator.dart';
@@ -52,18 +53,66 @@ class _GamePageState extends State<GamePage> {
   void _loadNextGame() {
     _userTeam = widget.leagueService.getTeam(widget.userTeamId);
     
-    // Get the next unplayed game from the season
-    _currentGame = _season.nextGame;
-    
-    if (_currentGame != null) {
-      // Load opponent team
-      final opponentId = _currentGame!.homeTeamId == widget.userTeamId
-          ? _currentGame!.awayTeamId
-          : _currentGame!.homeTeamId;
-      _opponentTeam = widget.leagueService.getTeam(opponentId);
+    // Check if we're in playoffs
+    if (_season.isPostSeason && _season.playoffBracket != null) {
+      // Get the user's current playoff series
+      final userSeries = _season.playoffBracket!.getUserTeamSeries(widget.userTeamId);
+      
+      if (userSeries != null && !userSeries.isComplete) {
+        // Create a playoff game for this series
+        // Determine home/away based on series game count
+        final gameNumber = userSeries.homeWins + userSeries.awayWins + 1;
+        final isUserHome = _determineHomeTeam(gameNumber, userSeries);
+        
+        _currentGame = Game(
+          id: 'playoff-${userSeries.id}-game-$gameNumber',
+          homeTeamId: isUserHome ? widget.userTeamId : (userSeries.homeTeamId == widget.userTeamId ? userSeries.awayTeamId : userSeries.homeTeamId),
+          awayTeamId: isUserHome ? (userSeries.homeTeamId == widget.userTeamId ? userSeries.awayTeamId : userSeries.homeTeamId) : widget.userTeamId,
+          homeScore: null,
+          awayScore: null,
+          isPlayed: false,
+          scheduledDate: DateTime.now(),
+        );
+        
+        // Load opponent team
+        final opponentId = _currentGame!.homeTeamId == widget.userTeamId
+            ? _currentGame!.awayTeamId
+            : _currentGame!.homeTeamId;
+        _opponentTeam = widget.leagueService.getTeam(opponentId);
+      } else {
+        // No active series for user, no game to play
+        _currentGame = null;
+        _opponentTeam = null;
+      }
+    } else {
+      // Regular season - get the next unplayed game from the season
+      _currentGame = _season.nextGame;
+      
+      if (_currentGame != null) {
+        // Load opponent team
+        final opponentId = _currentGame!.homeTeamId == widget.userTeamId
+            ? _currentGame!.awayTeamId
+            : _currentGame!.homeTeamId;
+        _opponentTeam = widget.leagueService.getTeam(opponentId);
+      }
     }
     
     setState(() {});
+  }
+  
+  /// Determine home team for playoff game based on 2-2-1-1-1 format
+  /// Games 1, 2, 5, 7 are at higher seed's home
+  /// Games 3, 4, 6 are at lower seed's home
+  bool _determineHomeTeam(int gameNumber, PlayoffSeries series) {
+    // Determine if user is the higher seed (home team in series)
+    final isUserHigherSeed = series.homeTeamId == widget.userTeamId;
+    
+    // 2-2-1-1-1 format
+    if (gameNumber == 1 || gameNumber == 2 || gameNumber == 5 || gameNumber == 7) {
+      return isUserHigherSeed; // Higher seed is home
+    } else {
+      return !isUserHigherSeed; // Lower seed is home
+    }
   }
 
   Future<void> _simulateGame() async {
@@ -107,6 +156,18 @@ class _GamePageState extends State<GamePage> {
         final updatedGames = List<Game>.from(_season.games);
         updatedGames[gameIndex] = simulatedGame;
         _season = _season.copyWith(games: updatedGames);
+      }
+      
+      // Simulate other league games if league schedule exists
+      if (_season.leagueSchedule != null) {
+        // Simulate approximately the same number of games across the league
+        // This keeps all teams progressing at roughly the same pace
+        final updatedSchedule = widget.leagueService.simulateLeagueGames(
+          _season.leagueSchedule!,
+          _gameService,
+          gamesToSimulate: 15, // Simulate ~15 games across the league per user game
+        );
+        _season = widget.leagueService.updateSeasonWithLeagueSchedule(_season, updatedSchedule);
       }
     }
     
@@ -157,6 +218,32 @@ class _GamePageState extends State<GamePage> {
           }
         }
         
+        // Simulate other playoff games in the current round
+        // This keeps all series progressing at the same pace
+        final simulationResult = PlayoffService.simulateNonUserPlayoffGames(
+          bracket: updatedBracket,
+          userTeamId: widget.userTeamId,
+          getTeam: (teamId) => widget.leagueService.getTeam(teamId)!,
+          simulateGame: (homeTeam, awayTeam, series) {
+            return _gameService.simulatePlayoffGame(homeTeam, awayTeam, series);
+          },
+        );
+        updatedBracket = simulationResult.bracket;
+        
+        // Check if we need to create second play-in games
+        if (updatedBracket.needsSecondPlayInGames()) {
+          // Create the second round of play-in games
+          updatedBracket = _createSecondPlayInGames(updatedBracket);
+          
+          if (mounted) {
+            AccessibilityUtils.showAccessibleInfo(
+              context,
+              'Play-in tournament continues! Final games to determine seeds 7 and 8.',
+              duration: const Duration(seconds: 3),
+            );
+          }
+        }
+        
         // Check if the current round is complete and advance if needed
         if (updatedBracket.isRoundComplete()) {
           final currentRound = updatedBracket.currentRound;
@@ -175,6 +262,11 @@ class _GamePageState extends State<GamePage> {
         
         // Update the season with the new bracket
         _season = _season.updatePlayoffBracket(updatedBracket);
+        
+        // If the round advanced and user has a new series, load the next game
+        if (updatedBracket.currentRound != _season.playoffBracket?.currentRound) {
+          _loadNextGame();
+        }
       }
     }
     
@@ -185,6 +277,15 @@ class _GamePageState extends State<GamePage> {
       _lastPlayedGame = simulatedGame;
       _isSimulating = false;
     });
+    
+    // If this was a playoff game and user's series is complete, reload to check for next series
+    if (isPlayoffGame && _season.playoffBracket != null) {
+      final userSeries = _season.playoffBracket!.getUserTeamSeries(widget.userTeamId);
+      if (userSeries == null || userSeries.isComplete) {
+        // User finished their series or doesn't have one, reload to check for next round
+        _loadNextGame();
+      }
+    }
 
     // Announce result for screen readers with accessibility features
     if (mounted) {
@@ -312,6 +413,49 @@ class _GamePageState extends State<GamePage> {
       default:
         return bracket;
     }
+  }
+  
+  /// Create the second round of play-in games
+  /// This is called after the initial 4 play-in games (7v8 and 9v10 for each conference) are complete
+  /// Creates the final 2 games: loser of 7v8 vs winner of 9v10 for each conference
+  PlayoffBracket _createSecondPlayInGames(PlayoffBracket bracket) {
+    final playInGames = List<PlayoffSeries>.from(bracket.playInGames);
+    
+    // Separate games by conference
+    final eastGames = playInGames.where((g) => g.conference == 'east').toList();
+    final westGames = playInGames.where((g) => g.conference == 'west').toList();
+    
+    // Create second play-in game for East (loser of 7v8 vs winner of 9v10)
+    if (eastGames.length == 2 && eastGames.every((g) => g.isComplete)) {
+      final eastSecondGame = PlayoffService.createSecondPlayInGame(
+        eastGames[0], // 7v8 game
+        eastGames[1], // 9v10 game
+        'east',
+      );
+      playInGames.add(eastSecondGame);
+    }
+    
+    // Create second play-in game for West (loser of 7v8 vs winner of 9v10)
+    if (westGames.length == 2 && westGames.every((g) => g.isComplete)) {
+      final westSecondGame = PlayoffService.createSecondPlayInGame(
+        westGames[0], // 7v8 game
+        westGames[1], // 9v10 game
+        'west',
+      );
+      playInGames.add(westSecondGame);
+    }
+    
+    return PlayoffBracket(
+      seasonId: bracket.seasonId,
+      teamSeedings: bracket.teamSeedings,
+      teamConferences: bracket.teamConferences,
+      playInGames: playInGames,
+      firstRound: bracket.firstRound,
+      conferenceSemis: bracket.conferenceSemis,
+      conferenceFinals: bracket.conferenceFinals,
+      nbaFinals: bracket.nbaFinals,
+      currentRound: bracket.currentRound,
+    );
   }
   
   /// Get human-readable round name

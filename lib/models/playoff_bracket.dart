@@ -59,11 +59,100 @@ class PlayoffBracket {
     }
   }
 
+  /// Check if a team has been eliminated from the playoffs
+  /// Returns true if the team lost a series in any completed round
+  bool isTeamEliminated(String teamId) {
+    // Check all completed rounds to see if team lost a series
+    
+    // Check play-in games
+    for (var series in playInGames) {
+      if (series.isComplete && 
+          (series.homeTeamId == teamId || series.awayTeamId == teamId) &&
+          series.winnerId != teamId) {
+        // Team lost a play-in game, but need to check if they're in another play-in game
+        // In play-in, losing the 7v8 game doesn't eliminate you (you get another chance)
+        // Only losing the final play-in game eliminates you
+        
+        // If we're past play-in round and team isn't in any later rounds, they were eliminated
+        if (currentRound != 'play-in') {
+          // Check if team made it to first round
+          final inFirstRound = firstRound.any((s) => 
+            s.homeTeamId == teamId || s.awayTeamId == teamId);
+          if (!inFirstRound) {
+            return true; // Eliminated in play-in
+          }
+        }
+      }
+    }
+    
+    // Check first round
+    for (var series in firstRound) {
+      if (series.isComplete && 
+          (series.homeTeamId == teamId || series.awayTeamId == teamId) &&
+          series.winnerId != teamId) {
+        return true; // Lost in first round
+      }
+    }
+    
+    // Check conference semifinals
+    for (var series in conferenceSemis) {
+      if (series.isComplete && 
+          (series.homeTeamId == teamId || series.awayTeamId == teamId) &&
+          series.winnerId != teamId) {
+        return true; // Lost in conference semis
+      }
+    }
+    
+    // Check conference finals
+    for (var series in conferenceFinals) {
+      if (series.isComplete && 
+          (series.homeTeamId == teamId || series.awayTeamId == teamId) &&
+          series.winnerId != teamId) {
+        return true; // Lost in conference finals
+      }
+    }
+    
+    // Check NBA Finals
+    if (nbaFinals != null && nbaFinals!.isComplete &&
+        (nbaFinals!.homeTeamId == teamId || nbaFinals!.awayTeamId == teamId) &&
+        nbaFinals!.winnerId != teamId) {
+      return true; // Lost in NBA Finals
+    }
+    
+    return false; // Team is still alive or won championship
+  }
+
   /// Check if all series in the current round are complete
   bool isRoundComplete() {
     final currentSeries = getCurrentRoundSeries();
     if (currentSeries.isEmpty) return false;
+    
+    // Special handling for play-in round
+    // Play-in needs 6 games total (3 per conference)
+    // Initial: 7v8 and 9v10 for each conference (4 games)
+    // Then: loser of 7v8 vs winner of 9v10 for each conference (2 more games)
+    if (currentRound == 'play-in') {
+      // Check if we have all 6 games
+      if (currentSeries.length < 6) {
+        // We don't have all games yet, check if initial games are complete
+        // If we have exactly 4 games and they're all complete, we need to create the final 2
+        return false;
+      }
+      // If we have 6 games, check if they're all complete
+      return currentSeries.every((series) => series.isComplete);
+    }
+    
     return currentSeries.every((series) => series.isComplete);
+  }
+
+  /// Check if we need to create the second round of play-in games
+  /// Returns true if we have 4 complete play-in games but haven't created the final 2 yet
+  bool needsSecondPlayInGames() {
+    if (currentRound != 'play-in') return false;
+    if (playInGames.length != 4) return false;
+    
+    // Check if all 4 initial games are complete
+    return playInGames.every((series) => series.isComplete);
   }
 
   /// Convert PlayoffBracket to JSON for serialization

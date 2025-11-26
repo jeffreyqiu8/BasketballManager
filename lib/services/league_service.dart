@@ -1,11 +1,14 @@
 import '../models/team.dart';
 import '../models/season.dart';
+import '../models/game.dart';
 import '../models/playoff_bracket.dart';
+import '../models/league_schedule.dart';
 import 'player_generator.dart';
 import 'playoff_service.dart';
 import '../utils/playoff_seeding.dart';
 import '../utils/playoff_bracket_generator.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:math';
 
 /// Service for managing the 30-team league
 /// Handles league initialization and team management
@@ -120,10 +123,19 @@ class LeagueService {
     }
 
     // Generate playoff seedings based on regular season records
-    // Note: We need all games from all teams to calculate proper seedings
-    // For now, we'll use the user's team games as a proxy
-    // In a full implementation, we'd track all 1230 games across the league
-    final seedings = PlayoffSeeding.calculateSeedings(_teams, season.games);
+    // Use league schedule if available, otherwise fall back to user's games
+    final gamesToUse = season.leagueSchedule != null
+        ? season.leagueSchedule!.allGames
+        : season.games;
+    final seedings = PlayoffSeeding.calculateSeedings(_teams, gamesToUse);
+
+    // Check if user's team made the playoffs (seeded 10 or better)
+    final userTeamSeed = seedings[season.userTeamId];
+    if (userTeamSeed == null || userTeamSeed > 10) {
+      // User's team missed the playoffs (seeded 11-15 or not seeded)
+      // Don't create a playoff bracket, just mark season as post-season
+      return season.copyWith(isPostSeason: true);
+    }
 
     // Create conference map for all teams
     final conferences = <String, String>{};
@@ -160,4 +172,345 @@ class LeagueService {
   PlayoffBracket advancePlayoffRound(PlayoffBracket bracket) {
     return PlayoffService.advancePlayoffRound(bracket);
   }
+
+  /// Simulate an entire regular season (all 82 games)
+  /// This method simulates all games in the season and updates statistics
+  /// Returns the completed season with all games played and stats accumulated
+  /// 
+  /// Parameters:
+  /// - season: The season to simulate (must have 82 unplayed games)
+  /// - gameService: The game service to use for simulating individual games
+  /// - updateStats: Whether to update season statistics (default: true)
+  /// 
+  /// Note: This can take some time as it simulates 82 detailed games
+  Season simulateEntireRegularSeason(
+    Season season,
+    dynamic gameService, {
+    bool updateStats = true,
+  }) {
+    if (season.isPostSeason) {
+      throw StateError('Cannot simulate regular season for a post-season');
+    }
+
+    if (season.games.length != 82) {
+      throw StateError('Season must have exactly 82 games');
+    }
+
+    var updatedSeason = season;
+    final userTeam = getTeam(season.userTeamId);
+    
+    if (userTeam == null) {
+      throw StateError('User team not found');
+    }
+
+    // Simulate each game
+    for (int i = 0; i < season.games.length; i++) {
+      final game = season.games[i];
+      
+      if (game.isPlayed) {
+        continue; // Skip already played games
+      }
+
+      // Get teams for this game
+      final homeTeam = getTeam(game.homeTeamId);
+      final awayTeam = getTeam(game.awayTeamId);
+
+      if (homeTeam == null || awayTeam == null) {
+        continue; // Skip if teams not found
+      }
+
+      // Simulate the game
+      final simulatedGame = gameService.simulateGameDetailed(homeTeam, awayTeam);
+
+      // Update the game in the season
+      final updatedGames = List<Game>.from(updatedSeason.games);
+      updatedGames[i] = simulatedGame.copyWith(
+        id: game.id,
+        scheduledDate: game.scheduledDate,
+      );
+
+      updatedSeason = Season(
+        id: updatedSeason.id,
+        year: updatedSeason.year,
+        games: updatedGames,
+        userTeamId: updatedSeason.userTeamId,
+        seasonStats: updatedSeason.seasonStats,
+        playoffBracket: updatedSeason.playoffBracket,
+        playoffStats: updatedSeason.playoffStats,
+        isPostSeason: updatedSeason.isPostSeason,
+        championshipRecord: updatedSeason.championshipRecord,
+        leagueSchedule: updatedSeason.leagueSchedule,
+      );
+
+      // Update season statistics if requested
+      if (updateStats && simulatedGame.boxScore != null) {
+        updatedSeason = updatedSeason.updateSeasonStats(simulatedGame.boxScore!);
+      }
+    }
+
+    // If league schedule exists, simulate all league games too
+    if (updatedSeason.leagueSchedule != null) {
+      final updatedSchedule = simulateLeagueGames(
+        updatedSeason.leagueSchedule!,
+        gameService,
+      );
+      updatedSeason = updateSeasonWithLeagueSchedule(updatedSeason, updatedSchedule);
+    }
+
+    return updatedSeason;
+  }
+
+  /// Simulate remaining games in the regular season
+  /// This method simulates only the unplayed games in the season
+  /// Returns the updated season with newly played games
+  /// 
+  /// Parameters:
+  /// - season: The season to simulate
+  /// - gameService: The game service to use for simulating individual games
+  /// - updateStats: Whether to update season statistics (default: true)
+  Season simulateRemainingRegularSeasonGames(
+    Season season,
+    dynamic gameService, {
+    bool updateStats = true,
+  }) {
+    if (season.isPostSeason) {
+      throw StateError('Cannot simulate regular season for a post-season');
+    }
+
+    var updatedSeason = season;
+    final userTeam = getTeam(season.userTeamId);
+    
+    if (userTeam == null) {
+      throw StateError('User team not found');
+    }
+
+    // Simulate each unplayed game
+    for (int i = 0; i < season.games.length; i++) {
+      final game = season.games[i];
+      
+      if (game.isPlayed) {
+        continue; // Skip already played games
+      }
+
+      // Get teams for this game
+      final homeTeam = getTeam(game.homeTeamId);
+      final awayTeam = getTeam(game.awayTeamId);
+
+      if (homeTeam == null || awayTeam == null) {
+        continue; // Skip if teams not found
+      }
+
+      // Simulate the game
+      final simulatedGame = gameService.simulateGameDetailed(homeTeam, awayTeam);
+
+      // Update the game in the season
+      final updatedGames = List<Game>.from(updatedSeason.games);
+      updatedGames[i] = simulatedGame.copyWith(
+        id: game.id,
+        scheduledDate: game.scheduledDate,
+      );
+
+      updatedSeason = Season(
+        id: updatedSeason.id,
+        year: updatedSeason.year,
+        games: updatedGames,
+        userTeamId: updatedSeason.userTeamId,
+        seasonStats: updatedSeason.seasonStats,
+        playoffBracket: updatedSeason.playoffBracket,
+        playoffStats: updatedSeason.playoffStats,
+        isPostSeason: updatedSeason.isPostSeason,
+        championshipRecord: updatedSeason.championshipRecord,
+        leagueSchedule: updatedSeason.leagueSchedule,
+      );
+
+      // Update season statistics if requested
+      if (updateStats && simulatedGame.boxScore != null) {
+        updatedSeason = updatedSeason.updateSeasonStats(simulatedGame.boxScore!);
+      }
+    }
+
+    // If league schedule exists, simulate remaining league games too
+    if (updatedSeason.leagueSchedule != null) {
+      final updatedSchedule = simulateLeagueGames(
+        updatedSeason.leagueSchedule!,
+        gameService,
+      );
+      updatedSeason = updateSeasonWithLeagueSchedule(updatedSeason, updatedSchedule);
+    }
+
+    return updatedSeason;
+  }
+
+  /// Generate a full league schedule for all 30 teams
+  /// Each team plays 82 games, resulting in 1230 total games
+  /// Returns a LeagueSchedule with all games
+  LeagueSchedule generateLeagueSchedule(String seasonId) {
+    final allGames = <Game>[];
+    final teamGameIds = <String, List<String>>{};
+    final random = Random();
+
+    // Initialize team game ID lists
+    for (var team in _teams) {
+      teamGameIds[team.id] = [];
+    }
+
+    // Generate games using a round-robin approach
+    // Each team needs 82 games total
+    // With 30 teams, each team plays the other 29 teams multiple times
+    
+    int gameDay = 0;
+    int maxAttempts = 1000;
+    int attempts = 0;
+    
+    // Keep generating games until all teams have 82 games
+    while (teamGameIds.values.any((games) => games.length < 82) && attempts < maxAttempts) {
+      attempts++;
+      
+      // Get teams that still need games, sorted by how many they need
+      final teamsNeedingGames = _teams
+          .where((team) => teamGameIds[team.id]!.length < 82)
+          .toList()
+        ..shuffle(random);
+      
+      if (teamsNeedingGames.isEmpty) break;
+      
+      // Try to create matchups
+      final usedTeams = <String>{};
+      
+      for (int i = 0; i < teamsNeedingGames.length; i++) {
+        final team1 = teamsNeedingGames[i];
+        
+        // Skip if already used in this round
+        if (usedTeams.contains(team1.id)) continue;
+        
+        // Skip if team already has 82 games
+        if (teamGameIds[team1.id]!.length >= 82) continue;
+        
+        // Find an opponent that also needs games and hasn't been used
+        Team? opponent;
+        for (int j = i + 1; j < teamsNeedingGames.length; j++) {
+          final candidate = teamsNeedingGames[j];
+          if (!usedTeams.contains(candidate.id) && 
+              teamGameIds[candidate.id]!.length < 82) {
+            opponent = candidate;
+            break;
+          }
+        }
+        
+        if (opponent == null) continue;
+        
+        // Create the game
+        final isTeam1Home = random.nextBool();
+        
+        final game = Game(
+          id: _uuid.v4(),
+          homeTeamId: isTeam1Home ? team1.id : opponent.id,
+          awayTeamId: isTeam1Home ? opponent.id : team1.id,
+          homeScore: null,
+          awayScore: null,
+          isPlayed: false,
+          scheduledDate: DateTime.now().add(Duration(days: gameDay)),
+        );
+        
+        allGames.add(game);
+        teamGameIds[team1.id]!.add(game.id);
+        teamGameIds[opponent.id]!.add(game.id);
+        
+        // Mark both teams as used in this round
+        usedTeams.add(team1.id);
+        usedTeams.add(opponent.id);
+      }
+      
+      gameDay++;
+    }
+
+    return LeagueSchedule(
+      seasonId: seasonId,
+      allGames: allGames,
+      teamGameIds: teamGameIds,
+    );
+  }
+
+  /// Simulate all league games for a given day/round
+  /// This simulates games across the entire league, not just the user's team
+  LeagueSchedule simulateLeagueGames(
+    LeagueSchedule schedule,
+    dynamic gameService, {
+    int? gamesToSimulate,
+  }) {
+    final updatedGames = List<Game>.from(schedule.allGames);
+    int gamesSimulated = 0;
+    final maxGames = gamesToSimulate ?? updatedGames.length;
+
+    for (int i = 0; i < updatedGames.length && gamesSimulated < maxGames; i++) {
+      final game = updatedGames[i];
+      
+      if (game.isPlayed) continue;
+
+      // Get teams for this game
+      final homeTeam = getTeam(game.homeTeamId);
+      final awayTeam = getTeam(game.awayTeamId);
+
+      if (homeTeam == null || awayTeam == null) continue;
+
+      // Simulate the game (use basic simulation for speed)
+      final simulatedGame = gameService.simulateGame(homeTeam, awayTeam);
+
+      // Update the game
+      updatedGames[i] = simulatedGame.copyWith(
+        id: game.id,
+        scheduledDate: game.scheduledDate,
+      );
+
+      gamesSimulated++;
+    }
+
+    return schedule.copyWith(allGames: updatedGames);
+  }
+
+  /// Update a season with a league schedule
+  /// This syncs the user's 82 games with the corresponding games in the league schedule
+  Season updateSeasonWithLeagueSchedule(Season season, LeagueSchedule schedule) {
+    // Update the user's games to match the league schedule games
+    final updatedUserGames = <Game>[];
+    
+    for (var userGame in season.games) {
+      // Find the corresponding game in the league schedule
+      final leagueGame = schedule.allGames.firstWhere(
+        (g) => g.id == userGame.id,
+        orElse: () => userGame,
+      );
+      updatedUserGames.add(leagueGame);
+    }
+
+    return season.copyWith(
+      games: updatedUserGames,
+      leagueSchedule: schedule,
+    );
+  }
+
+  /// Initialize a season with a league schedule
+  /// This creates a league schedule and ensures the user's games are part of it
+  Season initializeSeasonWithLeagueSchedule(Season season) {
+    // Generate league schedule for all 30 teams
+    final leagueSchedule = generateLeagueSchedule(season.id);
+    
+    // Extract the user's 82 games from the league schedule
+    final userGameIds = leagueSchedule.teamGameIds[season.userTeamId] ?? [];
+    final userGames = leagueSchedule.allGames
+        .where((game) => userGameIds.contains(game.id))
+        .toList();
+    
+    // Ensure we have exactly 82 games for the user
+    if (userGames.length != 82) {
+      throw StateError('User team should have exactly 82 games in league schedule, but has ${userGames.length}');
+    }
+    
+    // Return season with the user's games from the league schedule
+    return season.copyWith(
+      games: userGames,
+      leagueSchedule: leagueSchedule,
+    );
+  }
 }
+

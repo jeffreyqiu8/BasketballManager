@@ -7,6 +7,7 @@ import '../models/playoff_series.dart';
 import '../services/league_service.dart';
 import '../services/game_service.dart';
 import '../services/save_service.dart';
+import '../services/playoff_service.dart';
 import '../utils/accessibility_utils.dart';
 import '../utils/app_theme.dart';
 import '../widgets/loading_indicator.dart';
@@ -17,6 +18,7 @@ import 'team_page.dart';
 import 'season_page.dart';
 import 'save_page.dart';
 import 'playoff_bracket_page.dart';
+import 'league_standings_page.dart';
 import 'package:uuid/uuid.dart';
 
 /// Home page displaying user's team and season progress
@@ -83,6 +85,11 @@ class _HomePageState extends State<HomePage> {
       _userTeamId = widget.initialUserTeamId;
       _userTeam = _leagueService.getTeam(_userTeamId!);
       
+      // If loaded season doesn't have a league schedule, create one
+      if (_currentSeason!.leagueSchedule == null) {
+        _currentSeason = _leagueService.initializeSeasonWithLeagueSchedule(_currentSeason!);
+      }
+      
       setState(() {
         _isInitialized = true;
       });
@@ -100,12 +107,16 @@ class _HomePageState extends State<HomePage> {
 
       // Generate season schedule
       final schedule = _gameService.generateSchedule(_userTeamId!, teams);
-      _currentSeason = Season(
+      
+      var season = Season(
         id: 'season-2024',
         year: 2024,
         games: schedule,
         userTeamId: _userTeamId!,
       );
+      
+      // Initialize with league-wide schedule
+      _currentSeason = _leagueService.initializeSeasonWithLeagueSchedule(season);
     }
 
     setState(() {
@@ -176,6 +187,108 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Simulate the rest of the playoffs to completion
+  Future<void> _simulateRestOfPlayoffs() async {
+    if (_currentSeason == null || _currentSeason!.playoffBracket == null) return;
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Simulate Rest of Playoffs'),
+        content: const Text(
+          'This will simulate all remaining playoff games to determine the champion. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Simulate'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading indicator
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Simulating playoffs...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      var updatedBracket = _currentSeason!.playoffBracket!;
+      
+      // Simulate until playoffs are complete
+      while (updatedBracket.currentRound != 'complete') {
+        // Simulate all non-user games in current round
+        final result = PlayoffService.simulateNonUserPlayoffGames(
+          bracket: updatedBracket,
+          userTeamId: _userTeamId!,
+          getTeam: (teamId) => _leagueService.getTeam(teamId)!,
+          simulateGame: (homeTeam, awayTeam, series) {
+            return _gameService.simulatePlayoffGame(homeTeam, awayTeam, series);
+          },
+        );
+        
+        updatedBracket = result.bracket;
+        
+        // Small delay to show progress
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+
+      if (!mounted) return;
+      
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Update the season with completed bracket
+      setState(() {
+        _currentSeason = _currentSeason!.updatePlayoffBracket(updatedBracket);
+      });
+
+      // Show success message with champion
+      final champion = updatedBracket.nbaFinals?.winnerId;
+      if (champion != null) {
+        final championTeam = _leagueService.getTeam(champion);
+        if (championTeam != null) {
+          AccessibilityUtils.showAccessibleSuccess(
+            context,
+            'Playoffs complete! Champion: ${championTeam.city} ${championTeam.name}',
+            duration: const Duration(seconds: 3),
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Show error message
+      AccessibilityUtils.showAccessibleInfo(
+        context,
+        'Error simulating playoffs: $e',
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
   /// Start a new season
   Future<void> _startNewSeason() async {
     if (_userTeamId == null) return;
@@ -184,12 +297,17 @@ class _HomePageState extends State<HomePage> {
     final teams = _leagueService.getAllTeams();
     final schedule = _gameService.generateSchedule(_userTeamId!, teams);
     
-    final newSeason = Season(
-      id: const Uuid().v4(),
+    final seasonId = const Uuid().v4();
+    
+    var newSeason = Season(
+      id: seasonId,
       year: (_currentSeason?.year ?? 2024) + 1,
       games: schedule,
       userTeamId: _userTeamId!,
     );
+    
+    // Initialize with league-wide schedule
+    newSeason = _leagueService.initializeSeasonWithLeagueSchedule(newSeason);
 
     setState(() {
       _currentSeason = newSeason;
@@ -208,7 +326,8 @@ class _HomePageState extends State<HomePage> {
   void _navigateToGame() {
     if (_currentSeason == null || _userTeamId == null) return;
 
-    if (_currentSeason!.isComplete) {
+    // Only check if regular season is complete (not playoffs)
+    if (!_currentSeason!.isPostSeason && _currentSeason!.isComplete) {
       AccessibilityUtils.showAccessibleInfo(
         context,
         'Season complete! All 82 games have been played.',
@@ -253,6 +372,108 @@ class _HomePageState extends State<HomePage> {
             ),
       ),
     );
+  }
+
+  Future<void> _simulateRemainingSeason() async {
+    if (_currentSeason == null || _userTeamId == null) return;
+
+    if (_currentSeason!.isComplete) {
+      AccessibilityUtils.showAccessibleInfo(
+        context,
+        'Season is already complete!',
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Simulate Remaining Season'),
+        content: Text(
+          'This will simulate all ${_currentSeason!.gamesRemaining} remaining games. '
+          'This may take a few moments. Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Simulate'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Show loading indicator
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Simulating remaining season...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Simulate the remaining season
+      final updatedSeason = await Future.microtask(() {
+        return _leagueService.simulateRemainingRegularSeasonGames(
+          _currentSeason!,
+          _gameService,
+          updateStats: true,
+        );
+      });
+
+      if (!mounted) return;
+      
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Update the season
+      setState(() {
+        _currentSeason = updatedSeason;
+      });
+
+      // Check if we should start post-season
+      final postSeasonSeason = _leagueService.checkAndStartPostSeason(updatedSeason);
+      if (postSeasonSeason != null) {
+        setState(() {
+          _currentSeason = postSeasonSeason;
+        });
+      }
+
+      // Show success message
+      AccessibilityUtils.showAccessibleInfo(
+        context,
+        'Season simulation complete! Record: ${updatedSeason.wins}-${updatedSeason.losses}',
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Close loading dialog
+      Navigator.pop(context);
+
+      // Show error message
+      AccessibilityUtils.showAccessibleInfo(
+        context,
+        'Error simulating season: $e',
+        duration: const Duration(seconds: 3),
+      );
+    }
   }
 
   @override
@@ -544,8 +765,13 @@ class _HomePageState extends State<HomePage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final userSeries = bracket.getUserTeamSeries(_userTeamId!);
     final isPlayoffsComplete = bracket.currentRound == 'complete';
-    final isUserEliminated = userSeries == null && !isPlayoffsComplete;
+    final isUserEliminated = bracket.isTeamEliminated(_userTeamId!);
     final isChampion = isPlayoffsComplete && bracket.nbaFinals?.winnerId == _userTeamId;
+    
+    // Check if user never made playoffs (not in any series at all)
+    final neverMadePlayoffs = !isUserEliminated && userSeries == null && 
+        !bracket.playInGames.any((s) => s.homeTeamId == _userTeamId || s.awayTeamId == _userTeamId) &&
+        !bracket.firstRound.any((s) => s.homeTeamId == _userTeamId || s.awayTeamId == _userTeamId);
     
     return Semantics(
       label: _getPlayoffStatusLabel(bracket, userSeries, isUserEliminated, isChampion),
@@ -590,6 +816,44 @@ class _HomePageState extends State<HomePage> {
                   textAlign: TextAlign.center,
                 ),
               ]
+              // Didn't make playoffs
+              else if (neverMadePlayoffs) ...[
+                Icon(
+                  Icons.sports_basketball,
+                  size: 60,
+                  color: isDark ? AppTheme.textSecondaryDark : AppTheme.textSecondaryLight,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Missed Playoffs',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your team did not qualify for the playoffs this season',
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Final Record: ${season.wins}-${season.losses}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: _navigateToPlayoffBracket,
+                  icon: const Icon(Icons.emoji_events),
+                  label: const Text('View Playoff Bracket'),
+                ),
+              ]
               // Team eliminated
               else if (isUserEliminated) ...[
                 Icon(
@@ -608,7 +872,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Your playoff run has ended in the ${_getRoundName(bracket.currentRound)}',
+                  'Your playoff run has ended in the ${_getEliminationRound(bracket)}',
                   style: const TextStyle(fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
@@ -806,6 +1070,62 @@ class _HomePageState extends State<HomePage> {
     return '${team.city} ${team.name}';
   }
 
+  /// Get the round where the user's team was eliminated
+  String _getEliminationRound(PlayoffBracket bracket) {
+    // Check each round to find where the team lost
+    
+    // Check play-in
+    for (var series in bracket.playInGames) {
+      if (series.isComplete && 
+          (series.homeTeamId == _userTeamId || series.awayTeamId == _userTeamId) &&
+          series.winnerId != _userTeamId) {
+        // Lost a play-in game, but check if they made it to first round
+        final inFirstRound = bracket.firstRound.any((s) => 
+          s.homeTeamId == _userTeamId || s.awayTeamId == _userTeamId);
+        if (!inFirstRound) {
+          return _getRoundName('play-in');
+        }
+      }
+    }
+    
+    // Check first round
+    for (var series in bracket.firstRound) {
+      if (series.isComplete && 
+          (series.homeTeamId == _userTeamId || series.awayTeamId == _userTeamId) &&
+          series.winnerId != _userTeamId) {
+        return _getRoundName('first-round');
+      }
+    }
+    
+    // Check conference semifinals
+    for (var series in bracket.conferenceSemis) {
+      if (series.isComplete && 
+          (series.homeTeamId == _userTeamId || series.awayTeamId == _userTeamId) &&
+          series.winnerId != _userTeamId) {
+        return _getRoundName('conf-semis');
+      }
+    }
+    
+    // Check conference finals
+    for (var series in bracket.conferenceFinals) {
+      if (series.isComplete && 
+          (series.homeTeamId == _userTeamId || series.awayTeamId == _userTeamId) &&
+          series.winnerId != _userTeamId) {
+        return _getRoundName('conf-finals');
+      }
+    }
+    
+    // Check NBA Finals
+    if (bracket.nbaFinals != null && bracket.nbaFinals!.isComplete &&
+        (bracket.nbaFinals!.homeTeamId == _userTeamId || bracket.nbaFinals!.awayTeamId == _userTeamId) &&
+        bracket.nbaFinals!.winnerId != _userTeamId) {
+      return _getRoundName('finals');
+    }
+    
+    // Shouldn't reach here, but return current round as fallback
+    return _getRoundName(bracket.currentRound);
+  }
+
   Widget _buildPlayNextGameButton() {
     final season = _currentSeason!;
     
@@ -816,7 +1136,7 @@ class _HomePageState extends State<HomePage> {
       
       final userSeries = bracket.getUserTeamSeries(_userTeamId!);
       final isPlayoffsComplete = bracket.currentRound == 'complete';
-      final isUserEliminated = userSeries == null && !isPlayoffsComplete;
+      final isUserEliminated = bracket.isTeamEliminated(_userTeamId!);
       
       // Check if user won the championship
       if (isPlayoffsComplete && bracket.nbaFinals?.winnerId == _userTeamId) {
@@ -839,25 +1159,66 @@ class _HomePageState extends State<HomePage> {
         );
       }
       
-      // User team eliminated
-      if (isUserEliminated) {
-        return Semantics(
-          label: 'Your team has been eliminated from the playoffs',
-          button: true,
-          enabled: false,
-          child: ElevatedButton.icon(
-            onPressed: null,
-            icon: const Icon(Icons.cancel, size: 28),
-            label: const Text(
-              'Team Eliminated',
-              style: TextStyle(fontSize: 18),
+      // User team eliminated or didn't make playoffs
+      if (isUserEliminated || (userSeries == null && !isPlayoffsComplete)) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Simulate rest of playoffs button
+            Semantics(
+              label: 'Simulate the rest of the playoffs to see who wins',
+              button: true,
+              child: ElevatedButton.icon(
+                onPressed: _simulateRestOfPlayoffs,
+                icon: const Icon(Icons.fast_forward, size: 24),
+                label: const Text(
+                  'Simulate Rest of Playoffs',
+                  style: TextStyle(fontSize: 16),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: AppTheme.buttonPaddingMedium,
+                  backgroundColor: Colors.orange.shade700,
+                  foregroundColor: Colors.white,
+                ),
+              ),
             ),
-            style: ElevatedButton.styleFrom(
-              padding: AppTheme.buttonPaddingLarge,
-              backgroundColor: AppTheme.textDisabled,
-              foregroundColor: Colors.white,
+            const SizedBox(height: 12),
+            // View playoff bracket button
+            Semantics(
+              label: 'View playoff bracket',
+              button: true,
+              child: OutlinedButton.icon(
+                onPressed: _navigateToPlayoffBracket,
+                icon: const Icon(Icons.emoji_events),
+                label: const Text(
+                  'View Playoff Bracket',
+                  style: TextStyle(fontSize: 16),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: AppTheme.buttonPaddingMedium,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 12),
+            // Start new season button
+            Semantics(
+              label: 'Start a new season',
+              button: true,
+              child: ElevatedButton.icon(
+                onPressed: _startNewSeason,
+                icon: const Icon(Icons.refresh, size: 24),
+                label: const Text(
+                  'Start New Season',
+                  style: TextStyle(fontSize: 16),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: AppTheme.buttonPaddingMedium,
+                  backgroundColor: const Color.fromARGB(255, 55, 11, 92),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
         );
       }
       
@@ -903,54 +1264,101 @@ class _HomePageState extends State<HomePage> {
         );
       }
       
-      // Waiting for other series to complete
-      return Semantics(
-        label: 'Waiting for other playoff series to complete',
-        button: true,
-        enabled: false,
-        child: ElevatedButton.icon(
-          onPressed: null,
-          icon: const Icon(Icons.hourglass_empty, size: 28),
-          label: const Text(
-            'Waiting for Round to Complete',
-            style: TextStyle(fontSize: 18),
+      // Waiting for other series to complete (user finished their series)
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Simulate rest of playoffs button
+          Semantics(
+            label: 'Simulate the rest of the playoffs to see who wins',
+            button: true,
+            child: ElevatedButton.icon(
+              onPressed: _simulateRestOfPlayoffs,
+              icon: const Icon(Icons.fast_forward, size: 24),
+              label: const Text(
+                'Simulate Rest of Playoffs',
+                style: TextStyle(fontSize: 16),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: AppTheme.buttonPaddingMedium,
+                backgroundColor: Colors.orange.shade700,
+                foregroundColor: Colors.white,
+              ),
+            ),
           ),
-          style: ElevatedButton.styleFrom(
-            padding: AppTheme.buttonPaddingLarge,
-            backgroundColor: AppTheme.textDisabled,
-            foregroundColor: Colors.white,
+          const SizedBox(height: 12),
+          // View playoff bracket button
+          Semantics(
+            label: 'View playoff bracket',
+            button: true,
+            child: OutlinedButton.icon(
+              onPressed: _navigateToPlayoffBracket,
+              icon: const Icon(Icons.emoji_events),
+              label: const Text(
+                'View Playoff Bracket',
+                style: TextStyle(fontSize: 16),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: AppTheme.buttonPaddingMedium,
+              ),
+            ),
           ),
-        ),
+        ],
       );
     }
     
     // Regular season mode
     final isComplete = season.isComplete;
 
-    return Semantics(
-      label:
-          isComplete
-              ? 'Season complete, no more games to play'
-              : 'Play next game, game ${season.gamesPlayed + 1} of 82',
-      button: true,
-      enabled: !isComplete,
-      child: ElevatedButton.icon(
-        onPressed: isComplete ? null : _navigateToGame,
-        icon: Icon(
-          isComplete ? Icons.check_circle : Icons.play_arrow,
-          size: 28,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          label:
+              isComplete
+                  ? 'Season complete, no more games to play'
+                  : 'Play next game, game ${season.gamesPlayed + 1} of 82',
+          button: true,
+          enabled: !isComplete,
+          child: ElevatedButton.icon(
+            onPressed: isComplete ? null : _navigateToGame,
+            icon: Icon(
+              isComplete ? Icons.check_circle : Icons.play_arrow,
+              size: 28,
+            ),
+            label: Text(
+              isComplete ? 'Season Complete' : 'Play Next Game',
+              style: const TextStyle(fontSize: 18),
+            ),
+            style: ElevatedButton.styleFrom(
+              padding: AppTheme.buttonPaddingLarge,
+              backgroundColor:
+                  isComplete ? AppTheme.textDisabled : const Color.fromARGB(255, 55, 11, 92),
+              foregroundColor: Colors.white,
+            ),
+          ),
         ),
-        label: Text(
-          isComplete ? 'Season Complete' : 'Play Next Game',
-          style: const TextStyle(fontSize: 18),
-        ),
-        style: ElevatedButton.styleFrom(
-          padding: AppTheme.buttonPaddingLarge,
-          backgroundColor:
-              isComplete ? AppTheme.textDisabled : const Color.fromARGB(255, 55, 11, 92),
-          foregroundColor: Colors.white,
-        ),
-      ),
+        if (!isComplete && season.gamesRemaining > 1) ...[
+          const SizedBox(height: 12),
+          Semantics(
+            label: 'Simulate remaining ${season.gamesRemaining} games in the season',
+            button: true,
+            child: ElevatedButton.icon(
+              onPressed: _simulateRemainingSeason,
+              icon: const Icon(Icons.fast_forward, size: 24),
+              label: Text(
+                'Simulate Remaining Season (${season.gamesRemaining} games)',
+                style: const TextStyle(fontSize: 16),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: AppTheme.buttonPaddingMedium,
+                backgroundColor: Colors.orange.shade700,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -1025,6 +1433,30 @@ class _HomePageState extends State<HomePage> {
             },
             icon: const Icon(Icons.calendar_month),
             label: const Text('Season Schedule'),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        Semantics(
+          label: 'View league standings and team records',
+          button: true,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => LeagueStandingsPage(
+                        leagueService: _leagueService,
+                        season: _currentSeason!,
+                        userTeamId: _userTeamId!,
+                      ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.leaderboard),
+            label: const Text('League Standings'),
           ),
         ),
 

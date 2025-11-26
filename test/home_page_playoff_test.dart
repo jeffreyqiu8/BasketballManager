@@ -148,18 +148,30 @@ void main() {
     testWidgets('HomePage displays elimination message when user is eliminated', (WidgetTester tester) async {
       final teams = leagueService.getAllTeams();
       
-      // Create a bracket where user's team is not in current round (eliminated)
+      // Create a bracket where user's team lost in first round
       final playoffBracket = PlayoffBracket(
         seasonId: 'season-2024',
         teamSeedings: {userTeamId: 8, teams[1].id: 1},
         teamConferences: {userTeamId: 'east', teams[1].id: 'east'},
         playInGames: [],
         firstRound: [
-          // User's team is not in this series (they were eliminated)
+          // User's team lost this series (eliminated)
           PlayoffSeries(
-            id: 'series-1',
+            id: 'series-user',
             homeTeamId: teams[1].id,
-            awayTeamId: teams[2].id,
+            awayTeamId: userTeamId,
+            homeWins: 4, // Opponent won 4 games
+            awayWins: 2, // User won 2 games
+            round: 'first-round',
+            conference: 'east',
+            gameIds: [],
+            isComplete: true,
+          ),
+          // Another series in progress
+          PlayoffSeries(
+            id: 'series-2',
+            homeTeamId: teams[2].id,
+            awayTeamId: teams[3].id,
             homeWins: 2,
             awayWins: 1,
             round: 'first-round',

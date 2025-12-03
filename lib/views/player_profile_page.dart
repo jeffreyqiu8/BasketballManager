@@ -589,7 +589,7 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> with SingleTicker
                 ),
                 child: Center(
                   child: Text(
-                    '${fitScore.toStringAsFixed(0)}',
+                    fitScore.toStringAsFixed(0),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:BasketballManager/models/game_state.dart';
-import 'package:BasketballManager/models/team.dart';
 import 'package:BasketballManager/models/player.dart';
 import 'package:BasketballManager/models/season.dart';
 import 'package:BasketballManager/models/game.dart';
@@ -9,7 +8,6 @@ import 'package:BasketballManager/services/save_service.dart';
 import 'package:BasketballManager/services/game_service.dart';
 import 'package:BasketballManager/services/league_service.dart';
 import 'package:BasketballManager/services/player_generator.dart';
-import 'package:BasketballManager/utils/position_affinity.dart';
 
 /// Comprehensive end-to-end tests for the position system
 /// 

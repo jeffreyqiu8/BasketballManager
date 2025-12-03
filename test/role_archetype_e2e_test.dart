@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:BasketballManager/models/game_state.dart';
-import 'package:BasketballManager/models/team.dart';
 import 'package:BasketballManager/models/player.dart';
 import 'package:BasketballManager/models/season.dart';
 import 'package:BasketballManager/models/game.dart';

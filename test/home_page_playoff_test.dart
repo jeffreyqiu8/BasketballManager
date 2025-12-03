@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:BasketballManager/models/season.dart';
-import 'package:BasketballManager/models/team.dart';
 import 'package:BasketballManager/models/game.dart';
 import 'package:BasketballManager/models/playoff_bracket.dart';
 import 'package:BasketballManager/models/playoff_series.dart';

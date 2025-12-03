@@ -48,6 +48,19 @@ class PossessionSimulation {
       possessionCount++;
     }
 
+    // Handle overtime if game is tied
+    // Basketball games cannot end in ties, so simulate overtime possessions
+    while (homeScore == awayScore) {
+      // Overtime: alternate possessions until someone scores
+      final isHomeTeam = possessionCount % 2 == 0;
+      _simulatePossession(
+        isHomeTeam ? homeTeam : awayTeam,
+        isHomeTeam ? awayTeam : homeTeam,
+        isHomeTeam,
+      );
+      possessionCount++;
+    }
+
     // Convert mutable stats to immutable PlayerGameStats
     return _statsTracker.map(
       (playerId, stats) => MapEntry(playerId, stats.toPlayerGameStats()),

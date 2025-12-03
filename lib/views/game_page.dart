@@ -427,9 +427,13 @@ class _GamePageState extends State<GamePage> {
     
     // Create second play-in game for East (loser of 7v8 vs winner of 9v10)
     if (eastGames.length == 2 && eastGames.every((g) => g.isComplete)) {
+      // Identify which game is 7v8 and which is 9v10 based on seedings
+      final game78 = _identifyGame78(eastGames, bracket.teamSeedings);
+      final game910 = eastGames.firstWhere((g) => g.id != game78.id);
+      
       final eastSecondGame = PlayoffService.createSecondPlayInGame(
-        eastGames[0], // 7v8 game
-        eastGames[1], // 9v10 game
+        game78,
+        game910,
         'east',
       );
       playInGames.add(eastSecondGame);
@@ -437,9 +441,13 @@ class _GamePageState extends State<GamePage> {
     
     // Create second play-in game for West (loser of 7v8 vs winner of 9v10)
     if (westGames.length == 2 && westGames.every((g) => g.isComplete)) {
+      // Identify which game is 7v8 and which is 9v10 based on seedings
+      final game78 = _identifyGame78(westGames, bracket.teamSeedings);
+      final game910 = westGames.firstWhere((g) => g.id != game78.id);
+      
       final westSecondGame = PlayoffService.createSecondPlayInGame(
-        westGames[0], // 7v8 game
-        westGames[1], // 9v10 game
+        game78,
+        game910,
         'west',
       );
       playInGames.add(westSecondGame);
@@ -456,6 +464,23 @@ class _GamePageState extends State<GamePage> {
       nbaFinals: bracket.nbaFinals,
       currentRound: bracket.currentRound,
     );
+  }
+  
+  /// Identify the 7v8 game from a list of play-in games
+  /// The 7v8 game is the one where both teams have seeds 7 or 8
+  PlayoffSeries _identifyGame78(List<PlayoffSeries> games, Map<String, int> seedings) {
+    for (var game in games) {
+      final homeSeed = seedings[game.homeTeamId] ?? 0;
+      final awaySeed = seedings[game.awayTeamId] ?? 0;
+      
+      // Check if this is the 7v8 game (both teams are seed 7 or 8)
+      if ((homeSeed == 7 || homeSeed == 8) && (awaySeed == 7 || awaySeed == 8)) {
+        return game;
+      }
+    }
+    
+    // Fallback to first game if we can't identify (shouldn't happen)
+    return games.first;
   }
   
   /// Get human-readable round name

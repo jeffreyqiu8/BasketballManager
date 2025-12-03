@@ -43,8 +43,14 @@ class GameService {
     final awayRating = awayTeam.teamRating;
 
     // Calculate base scores (80-120 range)
-    final homeScore = _calculateTeamScore(homeRating);
-    final awayScore = _calculateTeamScore(awayRating);
+    var homeScore = _calculateTeamScore(homeRating);
+    var awayScore = _calculateTeamScore(awayRating);
+
+    // Ensure no ties - basketball games cannot end in ties
+    // If scores are equal, give home team a 1-point advantage
+    if (homeScore == awayScore) {
+      homeScore++;
+    }
 
     // Create and return the completed game
     return Game(

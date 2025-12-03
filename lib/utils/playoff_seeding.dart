@@ -49,23 +49,59 @@ class PlayoffSeeding {
     List<Game> allGames,
   ) {
     // Calculate win-loss records for each team
-    final records = _calculateWinLossRecords(teams, allGames);
+    final winRecords = _calculateWinLossRecords(teams, allGames);
+    final lossRecords = _calculateLossRecords(teams, allGames);
 
     // Separate teams by conference
     final eastTeams = teams.where((t) => isEasternConference(t)).toList();
     final westTeams = teams.where((t) => !isEasternConference(t)).toList();
 
-    // Sort teams by wins (descending) within each conference
+    // Sort teams by wins (descending), then by win percentage within each conference
+    // This matches the standings page sorting logic
     eastTeams.sort((a, b) {
-      final aWins = records[a.id] ?? 0;
-      final bWins = records[b.id] ?? 0;
-      return bWins.compareTo(aWins); // Descending order
+      final aWins = winRecords[a.id] ?? 0;
+      final bWins = winRecords[b.id] ?? 0;
+      
+      // First compare by wins
+      if (aWins != bWins) {
+        return bWins.compareTo(aWins); // Descending order
+      }
+      
+      // If wins are equal, use win percentage as tiebreaker
+      final aLosses = lossRecords[a.id] ?? 0;
+      final bLosses = lossRecords[b.id] ?? 0;
+      final aWinPct = (aWins + aLosses) > 0 ? aWins / (aWins + aLosses) : 0.0;
+      final bWinPct = (bWins + bLosses) > 0 ? bWins / (bWins + bLosses) : 0.0;
+      
+      if (aWinPct != bWinPct) {
+        return bWinPct.compareTo(aWinPct); // Descending order
+      }
+      
+      // If still tied, use team name for stable sorting
+      return '${a.city} ${a.name}'.compareTo('${b.city} ${b.name}');
     });
 
     westTeams.sort((a, b) {
-      final aWins = records[a.id] ?? 0;
-      final bWins = records[b.id] ?? 0;
-      return bWins.compareTo(aWins); // Descending order
+      final aWins = winRecords[a.id] ?? 0;
+      final bWins = winRecords[b.id] ?? 0;
+      
+      // First compare by wins
+      if (aWins != bWins) {
+        return bWins.compareTo(aWins); // Descending order
+      }
+      
+      // If wins are equal, use win percentage as tiebreaker
+      final aLosses = lossRecords[a.id] ?? 0;
+      final bLosses = lossRecords[b.id] ?? 0;
+      final aWinPct = (aWins + aLosses) > 0 ? aWins / (aWins + aLosses) : 0.0;
+      final bWinPct = (bWins + bLosses) > 0 ? bWins / (bWins + bLosses) : 0.0;
+      
+      if (aWinPct != bWinPct) {
+        return bWinPct.compareTo(aWinPct); // Descending order
+      }
+      
+      // If still tied, use team name for stable sorting
+      return '${a.city} ${a.name}'.compareTo('${b.city} ${b.name}');
     });
 
     // Assign seeds 1-15 to teams in each conference
@@ -122,6 +158,35 @@ class PlayoffSeeding {
         records[game.homeTeamId] = (records[game.homeTeamId] ?? 0) + 1;
       } else if (game.awayTeamWon) {
         records[game.awayTeamId] = (records[game.awayTeamId] ?? 0) + 1;
+      }
+    }
+
+    return records;
+  }
+
+  /// Calculate loss records for all teams from a list of games
+  /// Returns a Map of teamId -> number of losses
+  static Map<String, int> _calculateLossRecords(
+    List<Team> teams,
+    List<Game> allGames,
+  ) {
+    final records = <String, int>{};
+
+    // Initialize all teams with 0 losses
+    for (var team in teams) {
+      records[team.id] = 0;
+    }
+
+    // Count losses from played games
+    for (var game in allGames) {
+      if (!game.isPlayed) continue;
+
+      if (game.homeTeamWon) {
+        // Away team lost
+        records[game.awayTeamId] = (records[game.awayTeamId] ?? 0) + 1;
+      } else if (game.awayTeamWon) {
+        // Home team lost
+        records[game.homeTeamId] = (records[game.homeTeamId] ?? 0) + 1;
       }
     }
 

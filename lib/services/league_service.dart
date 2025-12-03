@@ -127,14 +127,86 @@ class LeagueService {
     final gamesToUse = season.leagueSchedule != null
         ? season.leagueSchedule!.allGames
         : season.games;
+    
+    // DEBUG: Log game completion status
+    print('=== PLAYOFF SEEDING DEBUG ===');
+    print('Total games in source: ${gamesToUse.length}');
+    final playedGames = gamesToUse.where((g) => g.isPlayed).length;
+    print('Games played: $playedGames');
+    print('Games remaining: ${gamesToUse.length - playedGames}');
+    
+    // Validate all games are complete before calculating seedings
+    if (season.leagueSchedule != null) {
+      final unplayedGames = gamesToUse.where((g) => !g.isPlayed).toList();
+      if (unplayedGames.isNotEmpty) {
+        print('WARNING: ${unplayedGames.length} league games are not complete!');
+        print('This may cause seeding calculation issues.');
+        // Show first few unplayed games
+        for (var i = 0; i < unplayedGames.length && i < 5; i++) {
+          final game = unplayedGames[i];
+          print('  Unplayed: ${game.homeTeamId} vs ${game.awayTeamId}');
+        }
+      }
+    }
+    
     final seedings = PlayoffSeeding.calculateSeedings(_teams, gamesToUse);
+
+    // DEBUG: Log seedings for all teams
+    print('\n=== CALCULATED SEEDINGS ===');
+    final eastSeedings = <int, String>{};
+    final westSeedings = <int, String>{};
+    
+    for (var team in _teams) {
+      final seed = seedings[team.id];
+      final conference = PlayoffSeeding.getConference(team);
+      final teamName = '${team.city} ${team.name}';
+      
+      if (seed != null) {
+        if (conference == 'east') {
+          eastSeedings[seed] = teamName;
+        } else {
+          westSeedings[seed] = teamName;
+        }
+      }
+    }
+    
+    print('\nEastern Conference:');
+    for (var seed in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) {
+      if (eastSeedings.containsKey(seed)) {
+        print('  $seed. ${eastSeedings[seed]}');
+      }
+    }
+    
+    print('\nWestern Conference:');
+    for (var seed in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) {
+      if (westSeedings.containsKey(seed)) {
+        print('  $seed. ${westSeedings[seed]}');
+      }
+    }
 
     // Check if user's team made the playoffs (seeded 10 or better)
     final userTeamSeed = seedings[season.userTeamId];
+    final userTeam = getTeam(season.userTeamId);
+    final userTeamName = userTeam != null ? '${userTeam.city} ${userTeam.name}' : 'Unknown';
+    
+    print('\n=== USER TEAM STATUS ===');
+    print('Team: $userTeamName');
+    print('Seed: ${userTeamSeed ?? "Not seeded"}');
+    print('Conference: ${userTeam != null ? PlayoffSeeding.getConference(userTeam) : "Unknown"}');
+    
     if (userTeamSeed == null || userTeamSeed > 10) {
       // User's team missed the playoffs (seeded 11-15 or not seeded)
+      print('Result: MISSED PLAYOFFS (seed > 10)');
+      print('=== END DEBUG ===\n');
       // Don't create a playoff bracket, just mark season as post-season
       return season.copyWith(isPostSeason: true);
+    }
+    
+    print('Result: MADE PLAYOFFS');
+    if (userTeamSeed >= 7 && userTeamSeed <= 10) {
+      print('Placement: PLAY-IN TOURNAMENT (seeds 7-10)');
+    } else {
+      print('Placement: DIRECT TO PLAYOFFS (seeds 1-6)');
     }
 
     // Create conference map for all teams
@@ -144,10 +216,21 @@ class LeagueService {
     }
 
     // Generate play-in tournament games
+    print('\n=== GENERATING PLAY-IN GAMES ===');
     final playInGames = PlayoffBracketGenerator.generatePlayInGames(
       seedings,
       conferences,
     );
+    
+    print('Play-in games generated: ${playInGames.length}');
+    for (var game in playInGames) {
+      final homeTeam = getTeam(game.homeTeamId);
+      final awayTeam = getTeam(game.awayTeamId);
+      final homeTeamName = homeTeam != null ? '${homeTeam.city} ${homeTeam.name}' : 'Unknown';
+      final awayTeamName = awayTeam != null ? '${awayTeam.city} ${awayTeam.name}' : 'Unknown';
+      print('  ${game.conference.toUpperCase()}: $homeTeamName vs $awayTeamName');
+    }
+    print('=== END DEBUG ===\n');
 
     // Create the playoff bracket
     final playoffBracket = PlayoffBracket(

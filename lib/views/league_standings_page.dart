@@ -51,6 +51,13 @@ class _LeagueStandingsPageState extends State<LeagueStandingsPage>
         ? widget.season.leagueSchedule!.allGames
         : widget.season.games;
 
+    // DEBUG: Log standings calculation
+    print('=== STANDINGS CALCULATION DEBUG ===');
+    print('Total games in source: ${gamesToAnalyze.length}');
+    final playedGames = gamesToAnalyze.where((g) => g.isPlayed).length;
+    print('Games played: $playedGames');
+    print('Using league schedule: ${widget.season.leagueSchedule != null}');
+
     // Calculate record for each team based on games
     for (var team in teams) {
       int wins = 0;
@@ -63,15 +70,17 @@ class _LeagueStandingsPageState extends State<LeagueStandingsPage>
         if (game.homeTeamId == team.id) {
           if (game.homeTeamWon) {
             wins++;
-          } else {
+          } else if (game.awayTeamWon) {
             losses++;
           }
+          // If neither won, it's a tie (shouldn't happen in basketball)
         } else if (game.awayTeamId == team.id) {
-          if (!game.homeTeamWon) {
+          if (game.awayTeamWon) {
             wins++;
-          } else {
+          } else if (game.homeTeamWon) {
             losses++;
           }
+          // If neither won, it's a tie (shouldn't happen in basketball)
         }
       }
 
@@ -87,6 +96,17 @@ class _LeagueStandingsPageState extends State<LeagueStandingsPage>
       );
     }
 
+    // DEBUG: Log user team record
+    final userRecord = records[widget.userTeamId];
+    if (userRecord != null) {
+      print('\n=== USER TEAM RECORD ===');
+      print('Team: ${userRecord.team.city} ${userRecord.team.name}');
+      print('Record: ${userRecord.wins}-${userRecord.losses}');
+      print('Win %: ${(userRecord.winPercentage * 100).toStringAsFixed(1)}%');
+      print('Conference: ${userRecord.conference}');
+    }
+    print('=== END STANDINGS DEBUG ===\n');
+
     setState(() {
       _teamRecords = records;
     });
@@ -98,13 +118,35 @@ class _LeagueStandingsPageState extends State<LeagueStandingsPage>
         .where((record) => record.conference == conference)
         .toList();
 
-    // Sort by wins (descending), then by win percentage
+    // Sort by wins (descending), then by win percentage, then by team name
     conferenceTeams.sort((a, b) {
       if (a.wins != b.wins) {
         return b.wins.compareTo(a.wins);
       }
-      return b.winPercentage.compareTo(a.winPercentage);
+      if (a.winPercentage != b.winPercentage) {
+        return b.winPercentage.compareTo(a.winPercentage);
+      }
+      // Use team name as final tiebreaker for stable sorting
+      return '${a.team.city} ${a.team.name}'.compareTo('${b.team.city} ${b.team.name}');
     });
+
+    // DEBUG: Log standings positions for comparison with playoff seedings
+    if (widget.season.isPostSeason && widget.season.playoffBracket != null) {
+      print('=== STANDINGS VS SEEDING COMPARISON ($conference) ===');
+      for (int i = 0; i < conferenceTeams.length; i++) {
+        final record = conferenceTeams[i];
+        final standingsPosition = i + 1;
+        final playoffSeed = widget.season.playoffBracket!.teamSeedings[record.team.id];
+        final teamName = '${record.team.city} ${record.team.name}';
+        
+        if (playoffSeed != null && playoffSeed != standingsPosition) {
+          print('  MISMATCH: $teamName - Standings: #$standingsPosition, Playoff Seed: #$playoffSeed (${record.wins}-${record.losses})');
+        } else if (record.team.id == widget.userTeamId) {
+          print('  USER TEAM: $teamName - Standings: #$standingsPosition, Playoff Seed: ${playoffSeed ?? "N/A"} (${record.wins}-${record.losses})');
+        }
+      }
+      print('=== END COMPARISON ===\n');
+    }
 
     return conferenceTeams;
   }
@@ -112,12 +154,16 @@ class _LeagueStandingsPageState extends State<LeagueStandingsPage>
   List<TeamRecord> _getLeagueStandings() {
     final allTeams = _teamRecords.values.toList();
 
-    // Sort by wins (descending), then by win percentage
+    // Sort by wins (descending), then by win percentage, then by team name
     allTeams.sort((a, b) {
       if (a.wins != b.wins) {
         return b.wins.compareTo(a.wins);
       }
-      return b.winPercentage.compareTo(a.winPercentage);
+      if (a.winPercentage != b.winPercentage) {
+        return b.winPercentage.compareTo(a.winPercentage);
+      }
+      // Use team name as final tiebreaker for stable sorting
+      return '${a.team.city} ${a.team.name}'.compareTo('${b.team.city} ${b.team.name}');
     });
 
     return allTeams;

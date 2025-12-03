@@ -895,9 +895,50 @@
   - Test championship celebration screen
   - _Requirements: 25.1, 25.4, 26.3_
 
-- [ ]* 53. Write integration tests for complete playoff flow
+- [x] 53. Write integration tests for complete playoff flow
+
+
+
+
+
   - Write test for complete season through playoffs to championship
   - Write test for play-in tournament through to first round
   - Write test for playoff statistics persistence across save/load
   - Write test for non-user playoff game simulation
   - _Requirements: 21.1, 27.1, 27.2, 27.3_
+
+
+- [x] 54. Fix playoff seeding mismatch issue
+
+
+
+
+
+  - Identified root cause #1: playoff seeding and standings used different sorting logic for teams with identical records
+  - Identified root cause #2: standings page incorrectly counted ties as wins using `!game.homeTeamWon` instead of `game.awayTeamWon`
+  - Updated PlayoffSeeding.calculateSeedings to use win percentage as tiebreaker
+  - Added team name as third tiebreaker for deterministic, stable sorting
+  - Fixed win/loss counting in league_standings_page.dart to explicitly check `game.awayTeamWon` and `game.homeTeamWon`
+  - Fixed win/loss counting in test to use same explicit checks
+  - Updated league_standings_page.dart to use same tiebreaker logic as playoff seeding
+  - Added comprehensive debug logging to league_service.dart for playoff generation
+  - Added debug logging to league_standings_page.dart for standings calculation
+  - Created playoff_seeding_mismatch_test.dart with diagnostic tests
+  - Verified all existing tests still pass
+  - Created docs/playoff_seeding_fix_summary.md documenting the fix
+  - _Issue: User's team showing as 5th seed in standings but placed in play-in tournament (seeds 7-10)_
+  - _Fix 1: Ensured both seeding and standings use identical sorting: wins → win% → team name_
+  - _Fix 2: Corrected win/loss counting to not treat ties as wins_
+
+
+- [x] 55. Eliminate ties in game simulation
+
+
+
+  - Added overtime logic to PossessionSimulation.simulate() to continue play until a winner is determined
+  - Updated GameService.simulateGame() to give home team 1-point advantage if scores are tied
+  - Created test/no_ties_test.dart to verify ties are impossible
+  - Tested with 1000 basic simulations and 100 detailed simulations - no ties found
+  - All existing tests still pass
+  - _Issue: Some games were ending in ties, causing win/loss counting issues_
+  - _Fix: Basketball games cannot end in ties, so added overtime/tiebreaker logic_

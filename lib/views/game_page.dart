@@ -122,6 +122,14 @@ class _GamePageState extends State<GamePage> {
       _isSimulating = true;
     });
 
+    // Reload teams from league service to get latest rotation configs
+    // This ensures any rotation changes made in team settings are reflected in simulation
+    _userTeam = widget.leagueService.getTeam(widget.userTeamId);
+    final opponentId = _currentGame!.homeTeamId == widget.userTeamId
+        ? _currentGame!.awayTeamId
+        : _currentGame!.homeTeamId;
+    _opponentTeam = widget.leagueService.getTeam(opponentId);
+
     // Determine home and away teams
     final isUserHome = _currentGame!.homeTeamId == widget.userTeamId;
     final homeTeam = isUserHome ? _userTeam! : _opponentTeam!;
@@ -904,19 +912,18 @@ class _GamePageState extends State<GamePage> {
       final stats = entry.value;
       final isUserTeam = _userTeam!.players.any((p) => p.id == player.id);
       
-      // Only include players with stats
-      if (stats.points > 0 || stats.rebounds > 0 || stats.assists > 0) {
-        final playerData = {
-          'player': player,
-          'stats': stats,
-          'isUserTeam': isUserTeam,
-        };
-        
-        if (isUserTeam) {
-          userTeamPlayers.add(playerData);
-        } else {
-          opponentTeamPlayers.add(playerData);
-        }
+      // Include all players who played (have any stats recorded)
+      // This ensures bench players are shown even if they didn't score
+      final playerData = {
+        'player': player,
+        'stats': stats,
+        'isUserTeam': isUserTeam,
+      };
+      
+      if (isUserTeam) {
+        userTeamPlayers.add(playerData);
+      } else {
+        opponentTeamPlayers.add(playerData);
       }
     }
     
@@ -1023,6 +1030,7 @@ class _GamePageState extends State<GamePage> {
                             ),
                           ),
                         ),
+                        _buildHeaderCell('MIN'),
                         _buildHeaderCell('PTS'),
                         _buildHeaderCell('REB'),
                         _buildHeaderCell('AST'),
@@ -1200,7 +1208,7 @@ class _GamePageState extends State<GamePage> {
     final isUserTeam = item['isUserTeam'] as bool;
     
     return Semantics(
-      label: '${player.name}, ${stats.points} points, ${stats.rebounds} rebounds, ${stats.assists} assists, ${stats.fieldGoalsMade} of ${stats.fieldGoalsAttempted} field goals, ${stats.fieldGoalPercentage.toStringAsFixed(1)} percent field goals, ${stats.threePointersMade} of ${stats.threePointersAttempted} three pointers, ${stats.threePointPercentage.toStringAsFixed(1)} percent three pointers, ${stats.freeThrowsMade} of ${stats.freeThrowsAttempted} free throws, ${stats.freeThrowPercentage.toStringAsFixed(1)} percent free throws, ${stats.turnovers} turnovers, ${stats.steals} steals, ${stats.blocks} blocks, ${stats.fouls} fouls',
+      label: '${player.name}, ${stats.minutesPlayed.toStringAsFixed(1)} minutes, ${stats.points} points, ${stats.rebounds} rebounds, ${stats.assists} assists, ${stats.fieldGoalsMade} of ${stats.fieldGoalsAttempted} field goals, ${stats.fieldGoalPercentage.toStringAsFixed(1)} percent field goals, ${stats.threePointersMade} of ${stats.threePointersAttempted} three pointers, ${stats.threePointPercentage.toStringAsFixed(1)} percent three pointers, ${stats.freeThrowsMade} of ${stats.freeThrowsAttempted} free throws, ${stats.freeThrowPercentage.toStringAsFixed(1)} percent free throws, ${stats.turnovers} turnovers, ${stats.steals} steals, ${stats.blocks} blocks, ${stats.fouls} fouls',
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Container(
@@ -1232,6 +1240,7 @@ class _GamePageState extends State<GamePage> {
                   ),
                 ),
               ),
+              _buildMinutesCell(stats.minutesPlayed),
               _buildStatCell(stats.points, isHighPerformance: stats.points >= 20),
               _buildStatCell(stats.rebounds, isHighPerformance: stats.rebounds >= 10),
               _buildStatCell(stats.assists, isHighPerformance: stats.assists >= 10),
@@ -1262,6 +1271,20 @@ class _GamePageState extends State<GamePage> {
           fontWeight: FontWeight.bold,
           fontSize: 13,
           color: isDark ? AppTheme.textPrimaryDark : AppTheme.textPrimaryLight,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildMinutesCell(double minutes) {
+    return SizedBox(
+      width: 50,
+      child: Text(
+        minutes.toStringAsFixed(1),
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
         ),
         textAlign: TextAlign.center,
       ),

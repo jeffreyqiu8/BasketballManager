@@ -65,22 +65,32 @@ class PlayoffBracket {
     // Check all completed rounds to see if team lost a series
     
     // Check play-in games
-    for (var series in playInGames) {
-      if (series.isComplete && 
-          (series.homeTeamId == teamId || series.awayTeamId == teamId) &&
-          series.winnerId != teamId) {
-        // Team lost a play-in game, but need to check if they're in another play-in game
-        // In play-in, losing the 7v8 game doesn't eliminate you (you get another chance)
-        // Only losing the final play-in game eliminates you
+    // In play-in, you can lose one game and still have another chance
+    // You're only eliminated if you lost a game AND you're not in any other play-in games
+    final lostPlayInGames = playInGames.where((series) =>
+      series.isComplete && 
+      (series.homeTeamId == teamId || series.awayTeamId == teamId) &&
+      series.winnerId != teamId
+    ).toList();
+    
+    if (lostPlayInGames.isNotEmpty) {
+      if (currentRound == 'play-in') {
+        // Still in play-in round - check if team has another game
+        final hasAnotherPlayInGame = playInGames.any((series) =>
+          !series.isComplete &&
+          (series.homeTeamId == teamId || series.awayTeamId == teamId)
+        );
         
-        // If we're past play-in round and team isn't in any later rounds, they were eliminated
-        if (currentRound != 'play-in') {
-          // Check if team made it to first round
-          final inFirstRound = firstRound.any((s) => 
-            s.homeTeamId == teamId || s.awayTeamId == teamId);
-          if (!inFirstRound) {
-            return true; // Eliminated in play-in
-          }
+        if (!hasAnotherPlayInGame) {
+          // Lost a play-in game and has no more play-in games - eliminated
+          return true;
+        }
+      } else {
+        // Past play-in round - check if team made it to first round
+        final inFirstRound = firstRound.any((s) => 
+          s.homeTeamId == teamId || s.awayTeamId == teamId);
+        if (!inFirstRound) {
+          return true; // Eliminated in play-in
         }
       }
     }

@@ -18,18 +18,70 @@ class PossessionSimulation {
   // Box score tracking: playerId -> stats
   final Map<String, _MutablePlayerStats> _statsTracker = {};
 
+  // Rotation tracking: minutes played per player
+  final Map<String, double> _minutesPlayed = {};
+
+  // Current lineups on the court
+  List<Player> _homeLineup = [];
+  List<Player> _awayLineup = [];
+
   PossessionSimulation(this.homeTeam, this.awayTeam) {
     _initializeStatsTracking();
+    _initializeLineups();
   }
 
-  /// Initialize stats tracking for all starting lineup players
+  /// Initialize stats tracking for all players in rotation
   void _initializeStatsTracking() {
-    for (final player in homeTeam.startingLineup) {
+    // Initialize for home team rotation players
+    final homeRotationPlayers = _getRotationPlayers(homeTeam);
+    for (final player in homeRotationPlayers) {
       _statsTracker[player.id] = _MutablePlayerStats(player.id);
+      _minutesPlayed[player.id] = 0.0;
     }
-    for (final player in awayTeam.startingLineup) {
+
+    // Initialize for away team rotation players
+    final awayRotationPlayers = _getRotationPlayers(awayTeam);
+    for (final player in awayRotationPlayers) {
       _statsTracker[player.id] = _MutablePlayerStats(player.id);
+      _minutesPlayed[player.id] = 0.0;
     }
+  }
+
+  /// Get all players in the rotation for a team
+  List<Player> _getRotationPlayers(Team team) {
+    if (team.rotationConfig == null) {
+      // No rotation config - use starting lineup only
+      return team.startingLineup;
+    }
+
+    final activePlayerIds = team.rotationConfig!.getActivePlayerIds();
+    return team.players
+        .where((player) => activePlayerIds.contains(player.id))
+        .toList();
+  }
+
+  /// Initialize lineups with starters
+  void _initializeLineups() {
+    _homeLineup = _getStartingLineup(homeTeam);
+    _awayLineup = _getStartingLineup(awayTeam);
+  }
+
+  /// Get the starting lineup for a team based on rotation config
+  List<Player> _getStartingLineup(Team team) {
+    if (team.rotationConfig == null) {
+      // No rotation config - use team's starting lineup
+      return team.startingLineup;
+    }
+
+    // Get starters from depth chart (depth = 1)
+    final starterIds = team.rotationConfig!.depthChart
+        .where((entry) => entry.depth == 1)
+        .map((entry) => entry.playerId)
+        .toList();
+
+    return team.players
+        .where((player) => starterIds.contains(player.id))
+        .toList();
   }
 
   /// Simulate the entire game and return box score
@@ -40,11 +92,24 @@ class PossessionSimulation {
 
     while (possessionCount < totalPossessions) {
       final isHomeTeam = possessionCount % 2 == 0;
+
+      // Calculate minutes elapsed (48 minutes / total possessions)
+      final minutesPerPossession = 48.0 / totalPossessions;
+      
+      // Check for substitutions before the possession
+      _checkSubstitutions(homeTeam, _homeLineup, minutesPerPossession);
+      _checkSubstitutions(awayTeam, _awayLineup, minutesPerPossession);
+
       _simulatePossession(
-        isHomeTeam ? homeTeam : awayTeam,
-        isHomeTeam ? awayTeam : homeTeam,
+        isHomeTeam ? _homeLineup : _awayLineup,
+        isHomeTeam ? _awayLineup : _homeLineup,
         isHomeTeam,
       );
+      
+      // Update minutes played for current lineups
+      _updateMinutesPlayed(_homeLineup, minutesPerPossession);
+      _updateMinutesPlayed(_awayLineup, minutesPerPossession);
+
       possessionCount++;
     }
 
@@ -53,27 +118,135 @@ class PossessionSimulation {
     while (homeScore == awayScore) {
       // Overtime: alternate possessions until someone scores
       final isHomeTeam = possessionCount % 2 == 0;
+      
+      // In overtime, use a fixed minutes per possession estimate
+      final overtimeMinutesPerPossession = 5.0 / 20.0; // 5 min OT / ~20 possessions
+      
+      _checkSubstitutions(homeTeam, _homeLineup, overtimeMinutesPerPossession);
+      _checkSubstitutions(awayTeam, _awayLineup, overtimeMinutesPerPossession);
+
       _simulatePossession(
-        isHomeTeam ? homeTeam : awayTeam,
-        isHomeTeam ? awayTeam : homeTeam,
+        isHomeTeam ? _homeLineup : _awayLineup,
+        isHomeTeam ? _awayLineup : _homeLineup,
         isHomeTeam,
       );
+      
+      _updateMinutesPlayed(_homeLineup, overtimeMinutesPerPossession);
+      _updateMinutesPlayed(_awayLineup, overtimeMinutesPerPossession);
+
       possessionCount++;
     }
 
     // Convert mutable stats to immutable PlayerGameStats
     return _statsTracker.map(
-      (playerId, stats) => MapEntry(playerId, stats.toPlayerGameStats()),
+      (playerId, stats) => MapEntry(
+        playerId, 
+        stats.toPlayerGameStats(_minutesPlayed[playerId] ?? 0.0),
+      ),
     );
   }
 
+  /// Update minutes played for all players in the lineup
+  void _updateMinutesPlayed(List<Player> lineup, double minutes) {
+    for (final player in lineup) {
+      _minutesPlayed[player.id] = (_minutesPlayed[player.id] ?? 0.0) + minutes;
+    }
+  }
+
+  /// Check if substitutions are needed and perform them
+  void _checkSubstitutions(Team team, List<Player> currentLineup, double minutesPerPossession) {
+    if (team.rotationConfig == null) {
+      // No rotation config - no substitutions
+      return;
+    }
+
+    final config = team.rotationConfig!;
+    
+    // Check each position for substitution needs
+    final positions = ['PG', 'SG', 'SF', 'PF', 'C'];
+    
+    for (final position in positions) {
+      // Get the current player at this position
+      final currentPlayer = _getPlayerAtPosition(currentLineup, position);
+      if (currentPlayer == null) continue;
+
+      // Get target minutes for this player
+      final targetMinutes = config.playerMinutes[currentPlayer.id] ?? 0;
+      final currentMinutes = _minutesPlayed[currentPlayer.id] ?? 0.0;
+
+      // Substitute if current player has reached or will exceed their target minutes after this possession
+      // This prevents players from significantly exceeding their allocation
+      if (currentMinutes + minutesPerPossession >= targetMinutes) {
+        // Find substitute from depth chart
+        final substitute = _findSubstitute(team, position, currentPlayer.id);
+        if (substitute != null) {
+          // Perform substitution
+          final index = currentLineup.indexOf(currentPlayer);
+          if (index != -1) {
+            currentLineup[index] = substitute;
+          }
+        }
+      }
+    }
+  }
+
+  /// Get the player currently playing at a specific position in the lineup
+  /// Returns the player at the given position index (0=PG, 1=SG, 2=SF, 3=PF, 4=C)
+  Player? _getPlayerAtPosition(List<Player> lineup, String position) {
+    // Map position to lineup index
+    final positionIndex = {
+      'PG': 0,
+      'SG': 1,
+      'SF': 2,
+      'PF': 3,
+      'C': 4,
+    }[position];
+    
+    if (positionIndex == null || positionIndex >= lineup.length) {
+      return null;
+    }
+    
+    return lineup[positionIndex];
+  }
+
+  /// Find a substitute for a position from the depth chart
+  Player? _findSubstitute(Team team, String position, String currentPlayerId) {
+    final config = team.rotationConfig!;
+    
+    // Get all players at this position from depth chart, ordered by depth
+    final playersAtPosition = config.depthChart
+        .where((entry) => entry.position == position)
+        .toList()
+      ..sort((a, b) => a.depth.compareTo(b.depth));
+
+    // Find the player who needs the most minutes (furthest behind their target)
+    Player? bestSubstitute;
+    double maxMinutesNeeded = 0;
+
+    for (final entry in playersAtPosition) {
+      if (entry.playerId == currentPlayerId) continue;
+
+      final targetMinutes = config.playerMinutes[entry.playerId] ?? 0;
+      final currentMinutes = _minutesPlayed[entry.playerId] ?? 0.0;
+      final minutesNeeded = targetMinutes - currentMinutes;
+
+      // If this player needs minutes and needs more than the current best
+      if (minutesNeeded > 0 && minutesNeeded > maxMinutesNeeded) {
+        maxMinutesNeeded = minutesNeeded;
+        bestSubstitute = team.players.firstWhere((p) => p.id == entry.playerId);
+      }
+    }
+
+    return bestSubstitute;
+  }
+
   /// Simulate a single possession
-  void _simulatePossession(Team offense, Team defense, bool isHome) {
+  void _simulatePossession(List<Player> offense, List<Player> defense, bool isHome) {
     // Select ball handler
-    final ballHandler = _selectShooter(offense.startingLineup);
+    final ballHandler = _selectShooter(offense);
 
     // Check for steal by defense
-    final stealResult = _checkSteal(ballHandler, defense.startingLineup);
+    final stealResult = _checkSteal(ballHandler, defense);
     if (stealResult != null) {
       // Steal occurred - record turnover and steal
       _statsTracker[ballHandler.id]!.turnovers++;
@@ -89,13 +262,13 @@ class PossessionSimulation {
     }
 
     // Select shooter (may be different from ball handler)
-    final shooter = _selectShooter(offense.startingLineup);
+    final shooter = _selectShooter(offense);
 
     // Determine shot type based on player's three-point attribute
     final isThreePoint = _determineShotType(shooter);
 
     // Check for foul during shot attempt
-    final foulResult = _checkFoul(shooter, defense.startingLineup);
+    final foulResult = _checkFoul(shooter, defense);
     if (foulResult != null) {
       // Foul occurred - simulate free throws
       _statsTracker[foulResult.id]!.fouls++;
@@ -106,7 +279,7 @@ class PossessionSimulation {
     // Check for block attempt
     final blockResult = _checkBlock(
       shooter,
-      defense.startingLineup,
+      defense,
       isThreePoint,
     );
     if (blockResult != null) {
@@ -117,14 +290,14 @@ class PossessionSimulation {
         _statsTracker[shooter.id]!.threePointersAttempted++;
       }
       // Handle rebound after block
-      _handleRebound(offense.startingLineup, defense.startingLineup);
+      _handleRebound(offense, defense);
       return;
     }
 
     // Attempt the shot
     final shotMade = _attemptShot(
       shooter,
-      defense.startingLineup,
+      defense,
       isThreePoint,
     );
 
@@ -152,10 +325,10 @@ class PossessionSimulation {
       }
 
       // Check for assist
-      _checkAssist(offense.startingLineup, shooter);
+      _checkAssist(offense, shooter);
     } else {
       // Shot missed - handle rebound
-      _handleRebound(offense.startingLineup, defense.startingLineup);
+      _handleRebound(offense, defense);
     }
   }
 
@@ -621,7 +794,7 @@ class _MutablePlayerStats {
   _MutablePlayerStats(this.playerId);
 
   /// Convert to immutable PlayerGameStats
-  PlayerGameStats toPlayerGameStats() {
+  PlayerGameStats toPlayerGameStats(double minutesPlayed) {
     return PlayerGameStats(
       playerId: playerId,
       points: points,
@@ -637,6 +810,7 @@ class _MutablePlayerStats {
       fouls: fouls,
       freeThrowsMade: freeThrowsMade,
       freeThrowsAttempted: freeThrowsAttempted,
+      minutesPlayed: minutesPlayed,
     );
   }
 }

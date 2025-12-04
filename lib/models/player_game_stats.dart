@@ -15,6 +15,7 @@ class PlayerGameStats {
   final int fouls;
   final int freeThrowsMade;
   final int freeThrowsAttempted;
+  final double minutesPlayed;
 
   PlayerGameStats({
     required this.playerId,
@@ -31,6 +32,7 @@ class PlayerGameStats {
     this.fouls = 0,
     this.freeThrowsMade = 0,
     this.freeThrowsAttempted = 0,
+    this.minutesPlayed = 0.0,
   });
 
   /// Calculate field goal percentage
@@ -68,6 +70,7 @@ class PlayerGameStats {
       'fouls': fouls,
       'freeThrowsMade': freeThrowsMade,
       'freeThrowsAttempted': freeThrowsAttempted,
+      'minutesPlayed': minutesPlayed,
     };
   }
 
@@ -89,6 +92,7 @@ class PlayerGameStats {
       fouls: json['fouls'] as int? ?? 0,
       freeThrowsMade: json['freeThrowsMade'] as int? ?? 0,
       freeThrowsAttempted: json['freeThrowsAttempted'] as int? ?? 0,
+      minutesPlayed: (json['minutesPlayed'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

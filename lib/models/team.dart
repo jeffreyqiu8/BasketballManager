@@ -1,4 +1,5 @@
 import 'player.dart';
+import 'rotation_config.dart';
 
 /// Team model with 15-player roster and starting lineup management
 /// Represents a basketball team in the league
@@ -8,6 +9,7 @@ class Team {
   final String city;
   final List<Player> players; // Always 15 players
   final List<String> startingLineupIds; // 5 player IDs
+  final RotationConfig? rotationConfig; // Optional rotation configuration
 
   Team({
     required this.id,
@@ -15,6 +17,7 @@ class Team {
     required this.city,
     required this.players,
     required this.startingLineupIds,
+    this.rotationConfig,
   }) : assert(players.length == 15, 'Team must have exactly 15 players'),
        assert(
          startingLineupIds.length == 5,
@@ -22,7 +25,22 @@ class Team {
        );
 
   /// Get the starting lineup players
+  /// If rotation config exists, uses depth chart (depth = 1)
+  /// Otherwise falls back to startingLineupIds
   List<Player> get startingLineup {
+    if (rotationConfig != null) {
+      // Get starters from rotation config (depth = 1)
+      final starterIds = rotationConfig!.depthChart
+          .where((entry) => entry.depth == 1)
+          .map((entry) => entry.playerId)
+          .toSet();
+      
+      return players
+          .where((player) => starterIds.contains(player.id))
+          .toList();
+    }
+    
+    // Fallback to startingLineupIds if no rotation config
     return players
         .where((player) => startingLineupIds.contains(player.id))
         .toList();
@@ -56,6 +74,7 @@ class Team {
       'city': city,
       'players': players.map((player) => player.toJson()).toList(),
       'startingLineupIds': startingLineupIds,
+      if (rotationConfig != null) 'rotationConfig': rotationConfig!.toJson(),
     };
   }
 
@@ -73,6 +92,9 @@ class Team {
               )
               .toList(),
       startingLineupIds: List<String>.from(json['startingLineupIds'] as List),
+      rotationConfig: json['rotationConfig'] != null
+          ? RotationConfig.fromJson(json['rotationConfig'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -83,6 +105,7 @@ class Team {
     String? city,
     List<Player>? players,
     List<String>? startingLineupIds,
+    RotationConfig? rotationConfig,
   }) {
     return Team(
       id: id ?? this.id,
@@ -90,6 +113,7 @@ class Team {
       city: city ?? this.city,
       players: players ?? this.players,
       startingLineupIds: startingLineupIds ?? this.startingLineupIds,
+      rotationConfig: rotationConfig ?? this.rotationConfig,
     );
   }
 }

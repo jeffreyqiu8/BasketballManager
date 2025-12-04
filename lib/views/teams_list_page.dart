@@ -3,7 +3,7 @@ import '../models/team.dart';
 import '../services/league_service.dart';
 import '../utils/app_theme.dart';
 import '../widgets/loading_indicator.dart';
-import 'team_page.dart';
+import 'team_overview_page.dart';
 
 /// Page to display all 30 teams in the league
 class TeamsListPage extends StatefulWidget {
@@ -113,7 +113,7 @@ class _TeamsListPageState extends State<TeamsListPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => TeamPage(
+                builder: (context) => TeamOverviewPage(
                   teamId: team.id,
                   leagueService: _leagueService,
                 ),

@@ -5,6 +5,7 @@ import '../models/playoff_bracket.dart';
 import '../models/league_schedule.dart';
 import 'player_generator.dart';
 import 'playoff_service.dart';
+import 'rotation_service.dart';
 import '../utils/playoff_seeding.dart';
 import '../utils/playoff_bracket_generator.dart';
 import 'package:uuid/uuid.dart';
@@ -68,13 +69,17 @@ class LeagueService {
       // Select first 5 players as starting lineup
       final startingLineupIds = players.take(5).map((p) => p.id).toList();
 
-      // Create team
+      // Generate default 8-player rotation for the team
+      final defaultRotation = RotationService.generateDefaultRotation(players);
+
+      // Create team with default rotation
       final team = Team(
         id: _uuid.v4(),
         name: teamData['name']!,
         city: teamData['city']!,
         players: players,
         startingLineupIds: startingLineupIds,
+        rotationConfig: defaultRotation,
       );
 
       _teams.add(team);
@@ -197,9 +202,39 @@ class LeagueService {
     if (userTeamSeed == null || userTeamSeed > 10) {
       // User's team missed the playoffs (seeded 11-15 or not seeded)
       print('Result: MISSED PLAYOFFS (seed > 10)');
+      
+      // Create conference map for all teams
+      final conferences = <String, String>{};
+      for (var team in _teams) {
+        conferences[team.id] = PlayoffSeeding.getConference(team);
+      }
+
+      // Generate play-in tournament games for other teams
+      print('\n=== GENERATING PLAY-IN GAMES (User missed playoffs) ===');
+      final playInGames = PlayoffBracketGenerator.generatePlayInGames(
+        seedings,
+        conferences,
+      );
+      
+      print('Play-in games generated: ${playInGames.length}');
       print('=== END DEBUG ===\n');
-      // Don't create a playoff bracket, just mark season as post-season
-      return season.copyWith(isPostSeason: true);
+
+      // Create a playoff bracket even though user missed playoffs
+      // This allows the UI to show the "Missed Playoffs" message and playoff bracket
+      final playoffBracket = PlayoffBracket(
+        seasonId: season.id,
+        teamSeedings: seedings,
+        teamConferences: conferences,
+        playInGames: playInGames,
+        firstRound: [],
+        conferenceSemis: [],
+        conferenceFinals: [],
+        nbaFinals: null,
+        currentRound: 'play-in',
+      );
+
+      // Start the post-season with the bracket (user can still view other teams' playoffs)
+      return season.startPostSeason(playoffBracket);
     }
     
     print('Result: MADE PLAYOFFS');

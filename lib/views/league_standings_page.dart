@@ -4,7 +4,7 @@ import '../models/team.dart';
 import '../services/league_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/playoff_seeding.dart';
-import 'team_page.dart';
+import 'team_overview_page.dart';
 
 /// League standings page showing all 30 teams ranked by record
 /// Displays Eastern and Western Conference standings separately
@@ -312,7 +312,7 @@ class _LeagueStandingsPageState extends State<LeagueStandingsPage>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => TeamPage(
+              builder: (context) => TeamOverviewPage(
                 teamId: record.team.id,
                 leagueService: widget.leagueService,
                 season: widget.season,

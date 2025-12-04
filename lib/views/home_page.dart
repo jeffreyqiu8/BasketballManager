@@ -13,7 +13,7 @@ import '../widgets/loading_indicator.dart';
 import '../widgets/championship_celebration_dialog.dart';
 import 'game_page.dart';
 import 'teams_list_page.dart';
-import 'team_page.dart';
+import 'team_overview_page.dart';
 import 'season_page.dart';
 import 'save_page.dart';
 import 'playoff_bracket_page.dart';
@@ -233,8 +233,20 @@ class _HomePageState extends State<HomePage> {
     try {
       var updatedBracket = _currentSeason!.playoffBracket!;
       
-      // Simulate until playoffs are complete
-      while (updatedBracket.currentRound != 'complete') {
+      // Simulate until playoffs are complete or user has a series to play
+      int iterations = 0;
+      const maxIterations = 100; // Safety limit to prevent infinite loops
+      
+      while (updatedBracket.currentRound != 'complete' && iterations < maxIterations) {
+        iterations++;
+        
+        // Check if user has a series to play in current round
+        final userSeries = updatedBracket.getUserTeamSeries(_userTeamId!);
+        if (userSeries != null && !userSeries.isComplete) {
+          // User has a series to play, stop simulation
+          break;
+        }
+        
         // Simulate all non-user games in current round
         final result = PlayoffService.simulateNonUserPlayoffGames(
           bracket: updatedBracket,
@@ -249,6 +261,10 @@ class _HomePageState extends State<HomePage> {
         
         // Small delay to show progress
         await Future.delayed(const Duration(milliseconds: 100));
+      }
+      
+      if (iterations >= maxIterations) {
+        throw Exception('Playoff simulation stuck in infinite loop');
       }
 
       if (!mounted) return;
@@ -767,10 +783,10 @@ class _HomePageState extends State<HomePage> {
     final isUserEliminated = bracket.isTeamEliminated(_userTeamId!);
     final isChampion = isPlayoffsComplete && bracket.nbaFinals?.winnerId == _userTeamId;
     
-    // Check if user never made playoffs (not in any series at all)
-    final neverMadePlayoffs = !isUserEliminated && userSeries == null && 
-        !bracket.playInGames.any((s) => s.homeTeamId == _userTeamId || s.awayTeamId == _userTeamId) &&
-        !bracket.firstRound.any((s) => s.homeTeamId == _userTeamId || s.awayTeamId == _userTeamId);
+    // Check if user never made playoffs
+    // A team made playoffs if they have a seed of 10 or better (1-10)
+    final userSeed = bracket.teamSeedings[_userTeamId];
+    final neverMadePlayoffs = userSeed == null || userSeed > 10;
     
     return Semantics(
       label: _getPlayoffStatusLabel(bracket, userSeries, isUserEliminated, isChampion),
@@ -1158,8 +1174,12 @@ class _HomePageState extends State<HomePage> {
         );
       }
       
+      // Check if user made playoffs
+      final userSeed = bracket.teamSeedings[_userTeamId];
+      final userMissedPlayoffs = userSeed == null || userSeed > 10;
+      
       // User team eliminated or didn't make playoffs
-      if (isUserEliminated || (userSeries == null && !isPlayoffsComplete)) {
+      if ((isUserEliminated && !isPlayoffsComplete) || userMissedPlayoffs) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1263,20 +1283,26 @@ class _HomePageState extends State<HomePage> {
         );
       }
       
-      // Waiting for other series to complete (user finished their series)
+      // Waiting for other series to complete (user finished their series or waiting for play-in)
+      final isWaitingForPlayIn = bracket.currentRound == 'play-in' && userSeries == null && !userMissedPlayoffs;
+      final buttonText = isWaitingForPlayIn ? 'Simulate Play-In Tournament' : 'Simulate Rest of Playoffs';
+      final buttonLabel = isWaitingForPlayIn 
+          ? 'Simulate play-in tournament to advance to first round'
+          : 'Simulate the rest of the playoffs to see who wins';
+      
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Simulate rest of playoffs button
           Semantics(
-            label: 'Simulate the rest of the playoffs to see who wins',
+            label: buttonLabel,
             button: true,
             child: ElevatedButton.icon(
               onPressed: _simulateRestOfPlayoffs,
               icon: const Icon(Icons.fast_forward, size: 24),
-              label: const Text(
-                'Simulate Rest of Playoffs',
-                style: TextStyle(fontSize: 16),
+              label: Text(
+                buttonText,
+                style: const TextStyle(fontSize: 16),
               ),
               style: ElevatedButton.styleFrom(
                 padding: AppTheme.buttonPaddingMedium,
@@ -1374,7 +1400,7 @@ class _HomePageState extends State<HomePage> {
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) => TeamPage(
+                      (context) => TeamOverviewPage(
                         teamId: _userTeamId!,
                         leagueService: _leagueService,
                         season: _currentSeason,
@@ -1398,7 +1424,7 @@ class _HomePageState extends State<HomePage> {
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) => TeamPage(
+                      (context) => TeamOverviewPage(
                         teamId: _userTeamId!,
                         leagueService: _leagueService,
                         season: _currentSeason,

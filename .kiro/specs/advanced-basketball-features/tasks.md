@@ -876,6 +876,7 @@
 
   - Write tests for PlayoffSeries model and series progression
   - Write tests for PlayoffBracket model and round advancement
+  - Write tests for PlayoffBracket model and round advancement
   - Write tests for playoff seeding algorithm
   - Write tests for play-in tournament resolution
   - Write tests for playoff statistics accumulation
@@ -942,3 +943,86 @@
   - All existing tests still pass
   - _Issue: Some games were ending in ties, causing win/loss counting issues_
   - _Fix: Basketball games cannot end in ties, so added overtime/tiebreaker logic_
+
+
+- [x] 56. Fix "Missed Playoffs" display for teams that made playoffs
+
+
+
+  - Fixed HomePage logic to check playoff qualification based on seed (1-10 make playoffs)
+  - Changed from checking if user is in any series to checking teamSeedings map
+  - Previous logic failed when user was seeded 1-10 but not yet in a series
+  - Created test/playoff_qualification_display_test.dart to verify fix
+  - All tests pass
+  - _Issue: UI showed "Missed Playoffs" even when team was 6th seed (should make playoffs)_
+  - _Fix: Check if userSeed <= 10 instead of checking if user is in playInGames or firstRound_
+
+- [x] 57. Fix missing playoff status display when user misses playoffs
+
+
+
+
+  - Fixed LeagueService.checkAndStartPostSeason to create playoff bracket even when user misses playoffs
+  - Previously returned season with isPostSeason=true but no bracket
+  - HomePage expected bracket to exist to show "Missed Playoffs" message
+  - Now creates bracket with play-in games for other teams, allowing user to view playoff bracket
+  - All tests pass
+  - _Issue: UI showed nothing when user missed playoffs - no "Missed Playoffs" message or options_
+  - _Fix: Always create playoff bracket, even when user's seed > 10_
+
+
+- [x] 58. Fix infinite loop when simulating playoffs after user misses playoffs
+
+
+
+
+  - Added logic to create third play-in game after first two are complete
+  - Play-in tournament needs 6 games total (3 per conference)
+  - Initial generation creates 4 games (7v8 and 9v10 for each conference)
+  - Third game (loser of 7v8 vs winner of 9v10) must be created after first two complete
+  - Modified simulateNonUserPlayoffGames to check for and create missing play-in games
+  - All tests pass
+  - _Issue: "Simulating playoffs..." dialog stuck in infinite loop_
+  - _Fix: Create third play-in game dynamically when first two games complete_
+
+
+- [x] 59. Fix missing simulate button when user is waiting for play-in to complete
+
+
+
+
+  - Fixed HomePage logic to show "Simulate Play-In Tournament" button for users seeded 1-6
+  - Users seeded 1-6 skip play-in and wait for it to complete before first round
+  - Changed elimination check to not treat waiting users as eliminated
+  - Button text changes based on context: "Simulate Play-In Tournament" vs "Simulate Rest of Playoffs"
+  - All tests pass
+  - _Issue: 5th seed user had no way to advance through play-in tournament to start first round_
+  - _Fix: Show simulate button with appropriate text when user is waiting for current round_
+
+
+- [x] 60. Improve play-in game creation logic to prevent infinite loops
+
+
+
+  - Simplified logic to identify 7v8 and 9v10 games by checking team seeds
+  - Previous logic used complex firstWhere queries that could fail
+  - New logic checks minimum seed in each game (7 for 7v8, 9 for 9v10)
+  - Added error handling to prevent crashes if third game creation fails
+  - Changed condition from `length == 4` to `length < 6` to be more robust
+  - All tests pass
+  - _Issue: Simulation still getting stuck after user eliminated from play-in_
+  - _Fix: More robust seed-based identification of play-in games_
+
+
+- [x] 61. Fix premature elimination after losing first play-in game
+
+
+
+
+  - Fixed isTeamEliminated to check if user has another play-in game before marking as eliminated
+  - In play-in, losing 7v8 game gives you a second chance in the third game
+  - Previous logic marked team as eliminated immediately after losing any play-in game
+  - New logic checks if team has any incomplete play-in games remaining
+  - All tests pass
+  - _Issue: After losing first play-in game, UI showed "season over" instead of showing next play-in game_
+  - _Fix: Only mark as eliminated if lost a play-in game AND no more play-in games remaining_

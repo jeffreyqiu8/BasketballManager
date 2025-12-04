@@ -490,6 +490,64 @@ class PlayoffService {
     // Update the bracket with the simulated series
     var updatedBracket = _updateBracketWithSeries(bracket, updatedSeries);
 
+    // Special handling for play-in round: create third game if needed AFTER simulation
+    if (updatedBracket.currentRound == 'play-in') {
+      final allPlayInGames = List<PlayoffSeries>.from(updatedBracket.playInGames);
+      bool gamesAdded = false;
+      
+      // Process each conference
+      for (var conference in ['east', 'west']) {
+        final conferenceGames = allPlayInGames.where((s) => s.conference == conference).toList();
+        
+        // If we have exactly 2 games and both are complete, create the third game
+        if (conferenceGames.length == 2 && conferenceGames.every((s) => s.isComplete)) {
+          // Find which game has the 7 seed (higher seed in play-in)
+          // The 7v8 game will have both teams with seeds 7 and 8
+          // The 9v10 game will have both teams with seeds 9 and 10
+          PlayoffSeries? game78;
+          PlayoffSeries? game910;
+          
+          for (var game in conferenceGames) {
+            final homeSeed = updatedBracket.teamSeedings[game.homeTeamId] ?? 99;
+            final awaySeed = updatedBracket.teamSeedings[game.awayTeamId] ?? 99;
+            final minSeed = homeSeed < awaySeed ? homeSeed : awaySeed;
+            
+            if (minSeed == 7) {
+              game78 = game;
+            } else if (minSeed == 9) {
+              game910 = game;
+            }
+          }
+          
+          if (game78 != null && game910 != null) {
+            try {
+              final thirdGame = createSecondPlayInGame(game78, game910, conference);
+              allPlayInGames.add(thirdGame);
+              gamesAdded = true;
+            } catch (e) {
+              // If creation fails, log and continue
+              print('Warning: Could not create third play-in game for $conference: $e');
+            }
+          }
+        }
+      }
+      
+      // Update bracket with new games if any were added
+      if (gamesAdded) {
+        updatedBracket = PlayoffBracket(
+          seasonId: updatedBracket.seasonId,
+          teamSeedings: updatedBracket.teamSeedings,
+          teamConferences: updatedBracket.teamConferences,
+          playInGames: allPlayInGames,
+          firstRound: updatedBracket.firstRound,
+          conferenceSemis: updatedBracket.conferenceSemis,
+          conferenceFinals: updatedBracket.conferenceFinals,
+          nbaFinals: updatedBracket.nbaFinals,
+          currentRound: updatedBracket.currentRound,
+        );
+      }
+    }
+
     // Check if the round is complete and advance if needed
     if (updatedBracket.isRoundComplete()) {
       updatedBracket = advancePlayoffRound(updatedBracket);
